@@ -5,18 +5,21 @@ from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+import random
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .models import UserProfile
 from .tokens import generate_token  
 from growth_mate_project import settings 
 
+otp_storage = {}
+
 def signup(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name")
         last_name = request.POST.get("last_name")
         email = request.POST.get("email")
-        role = request.POST.get("role")  
+        role = request.POST.get("role") 
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
 
@@ -32,33 +35,23 @@ def signup(request):
             messages.error(request, "Passwords do not match!")
             return redirect("signup")
 
-        user = User.objects.create_user(username=email, email=email, password=password1)
-        user.first_name = first_name
-        user.last_name = last_name
-        user.is_active = False 
-        user.save()
+        otp = str(random.randint(100000, 999999))
+        otp_storage[email] = otp  
 
-        UserProfile.objects.create(user=user, role=role)
+        email_subject = "Your OTP for Email Verification"
+        email_message = f"Hello {first_name},\n\nYour One-Time Password (OTP) for verification is: {otp}\n\nEnter this OTP on the website to activate your account.\n\nThank you!"
+        send_mail(email_subject, email_message, settings.EMAIL_HOST_USER, [email], fail_silently=True)
 
-        current_site = get_current_site(request)
-        email_subject = "Confirm your Email - MyProject"
-        email_message = render_to_string("email_verification.html", {
-            "name": user.first_name,
-            "domain": current_site.domain,
-            "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-            "token": generate_token.make_token(user)
-        })
-        email = EmailMessage(
-            email_subject,
-            email_message,
-            settings.EMAIL_HOST_USER,
-            [user.email],
-        )
-        email.fail_silently = True
-        email.send()
+        request.session['temp_user_data'] = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'password': password1,
+            'role': role
+        }
 
-        messages.success(request, "We have sent you a confirmation email. Please check your inbox.")
-        return redirect("login")
+        messages.success(request, "An OTP has been sent to your email. Please enter it to verify your account.")
+        return redirect("verify_otp")
 
     return render(request, "signup.html")
 
@@ -87,17 +80,33 @@ def logout_view(request):
     messages.success(request, "You have been logged out successfully.")
     return redirect("login")
 
-def activate(request, uidb64, token):
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
+def verify_otp(request):
+    if request.method == "POST":
+        email = request.session.get('temp_user_data', {}).get('email')
+        entered_otp = request.POST.get("otp")
 
-    if user is not None and generate_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        messages.success(request, "Your account has been activated! You can now log in.")
-        return redirect("login")
-    else:
-        return render(request, "activation_failed.html")
+        if not email or email not in otp_storage:
+            messages.error(request, "Session expired. Please register again.")
+            return redirect("signup")
+
+        if otp_storage[email] == entered_otp:
+            user_data = request.session.get('temp_user_data')
+
+            user = User.objects.create_user(username=email, email=email, password=user_data['password'])
+            user.first_name = user_data['first_name']
+            user.last_name = user_data['last_name']
+            user.is_active = True 
+            user.save()
+
+            UserProfile.objects.create(user=user, role=user_data['role'])
+
+            del otp_storage[email]
+            request.session.pop('temp_user_data', None)
+
+            messages.success(request, "Your account has been activated! You can now log in.")
+            return redirect("login")
+        else:
+            messages.error(request, "Invalid OTP. Please try again.")
+            return redirect("verify_otp")
+
+    return render(request, "verify_otp.html")
