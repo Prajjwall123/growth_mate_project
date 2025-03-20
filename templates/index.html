@@ -10,7 +10,6 @@
 </head>
 
 <body class="bg-gray-50 font-sans">
-    <!-- Alert Box for Messages -->
     {% if messages %}
     <div id="alert-box"
         class="absolute top-4 right-4 z-50 flex items-center p-4 text-sm text-gray-800 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 shadow-lg transition-opacity duration-500"
@@ -39,7 +38,6 @@
     </script>
     {% endif %}
 
-    <!-- Header -->
     <header class="flex items-center justify-between px-6 py-4 bg-white shadow-sm">
         <div>
             <img src="{% static 'images/logo.png' %}" alt="GrowthMate Logo" class="h-8">
@@ -51,7 +49,6 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
     <section
         class="flex flex-col md:flex-row items-center justify-between px-6 py-16 bg-gradient-to-r from-orange-200 to-orange-50">
         <div class="md:w-1/2 space-y-4">
@@ -68,11 +65,9 @@
         </div>
     </section>
 
-    <!-- Featured Courses Section -->
     <section class="px-6 py-12 bg-white">
         <h2 class="text-2xl font-semibold text-center text-gray-800 mb-8">Featured Courses for Retail Professionals</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <!-- Course 1 -->
             <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
                 <img src="{% static 'images/customer_service.png' %}" alt="Customer Service Course"
                     class="w-full h-40 object-cover rounded-md mb-4">
@@ -87,7 +82,6 @@
                     </a>
                 </div>
             </div>
-            <!-- Course 2 -->
             <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
                 <img src="{% static 'images/communication.png' %}" alt="Inventory Management Course"
                     class="w-full h-40 object-cover rounded-md mb-4">
@@ -102,7 +96,6 @@
                     </a>
                 </div>
             </div>
-            <!-- Course 3 -->
             <div class="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
                 <img src="{% static 'images/leadership.png' %}" alt="Sales Techniques Course"
                     class="w-full h-40 object-cover rounded-md mb-4">
@@ -126,11 +119,9 @@
         </div>
     </section>
 
-    <!-- Benefits for Retail Professionals Section -->
     <section class="px-6 py-12 bg-gradient-to-r from-orange-200 to-orange-50">
         <h2 class="text-2xl font-semibold text-center text-gray-800 mb-8">Empowering Retail Professionals</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <!-- For Retail Employees -->
             <div class="flex items-start space-x-4">
                 <div class="flex-shrink-0">
                     <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -148,7 +139,6 @@
                     </p>
                 </div>
             </div>
-            <!-- For Retail Managers -->
             <div class="flex items-start space-x-4">
                 <div class="flex-shrink-0">
                     <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -169,7 +159,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="px-6 py-8 bg-white text-center text-gray-600">
         <div class="flex justify-center space-x-4 mb-4">
             <a href="#" class="hover:underline">Privacy Policy</a>
