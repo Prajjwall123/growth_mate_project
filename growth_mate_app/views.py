@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from .models import UserProfile
+from .models import Course, UserProfile
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -132,3 +132,7 @@ def resend_otp(request):
 
         return JsonResponse({"message": "OTP has been resent!", "success": True})
     return JsonResponse({"message": "Invalid request", "success": False}, status=400)
+
+def my_courses_view(request):
+    trending_courses = Course.objects.all().order_by('-due_date')[:6]
+    return render(request, "my_courses.html", {"trending_courses": trending_courses})
