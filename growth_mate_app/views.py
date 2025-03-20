@@ -11,6 +11,10 @@ from django.shortcuts import render, redirect
 from .models import UserProfile
 from .tokens import generate_token  
 from growth_mate_project import settings 
+from django.http import JsonResponse
+from django.core.mail import send_mail
+import random
+
 
 otp_storage = {}
 
@@ -110,3 +114,21 @@ def verify_otp(request):
             return redirect("verify_otp")
 
     return render(request, "verify_otp.html")
+
+
+def resend_otp(request):
+    if request.method == "POST":
+        new_otp = random.randint(100000, 999999)  
+
+        request.session['otp'] = new_otp  
+
+        send_mail(
+            "Your New OTP",
+            f"Your OTP code is: {new_otp}",
+            "no-reply@growthmate.com",
+            [request.user.email], 
+            fail_silently=False,
+        )
+
+        return JsonResponse({"message": "OTP has been resent!", "success": True})
+    return JsonResponse({"message": "Invalid request", "success": False}, status=400)
