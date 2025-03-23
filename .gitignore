@@ -4,3 +4,6 @@ static/course_videos
 
 note.txt
 virtualenv/
+
+__pycache__/
+*.pyc
