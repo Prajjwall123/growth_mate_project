@@ -12,15 +12,17 @@ class UserProfile(models.Model):
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
-    profile_pic = models.ImageField(upload_to='static/profile_images/', blank=True, default='static/assets/images/defaultuser.jpg')    
-    cover_pic = models.ImageField(upload_to='static/cover_images/', blank=True, default='static/assets/images/default_cover.png')    
+    profile_pic = models.ImageField(upload_to='static/profile_pics/', blank=True, default='static/assets/images/default_profile.png')
+    cover_image = models.ImageField(upload_to='static/cover_images/', blank=True, default='static/assets/images/default_cover.png')
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
     professional_headline = models.CharField(max_length=255, blank=True, null=True) 
     bio = models.TextField(blank=True, null=True)
 
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, default='')
+    is_phone_verified = models.BooleanField(default=False)
+    headline = models.CharField(max_length=100, blank=True)
 
     GENDER_CHOICES = [
         ('male', 'Male'),
@@ -46,6 +48,14 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def total_lessons(self):
+        return self.lesson_set.count()
+
+    @property
+    def total_duration(self):
+        return sum(lesson.duration for lesson in self.lesson_set.all())
 
 
 class CourseContent(models.Model):
@@ -82,3 +92,19 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.course.title}"
+
+
+class Lesson(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    duration = models.IntegerField(help_text='Duration in minutes')
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"

@@ -7,8 +7,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 import random
 from django.contrib import messages
-from django.shortcuts import render, redirect
-from .models import Course, UserProfile
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Course, UserProfile, Lesson
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -16,6 +16,8 @@ from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
+from django.views.decorators.http import require_POST
+from django.core.paginator import Paginator
 
 
 otp_storage = {}
@@ -62,7 +64,14 @@ def signup(request):
     return render(request, "signup.html")
 
 def home(request):
-    return render(request, "index.html")
+    context = {}
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            context['user_profile'] = user_profile
+        except UserProfile.DoesNotExist:
+            pass
+    return render(request, "index.html", context)
 
 def login_view(request):
     if request.method == "POST":
@@ -181,3 +190,171 @@ def manager_dashboard(request):
     }
     
     return render(request, 'manager_dashboard.html', context)
+
+@login_required
+def my_courses(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'manager':
+        messages.error(request, 'Access denied. Managers only.')
+        return redirect('home')
+    
+    courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
+    return render(request, 'my_courses.html', {
+        'courses': courses,
+        'user_profile': user_profile
+    })
+
+@login_required
+@require_POST
+def add_course(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'manager':
+        messages.error(request, 'Access denied. Managers only.')
+        return redirect('home')
+    
+    try:
+        course = Course.objects.create(
+            title=request.POST['title'],
+            duration=request.POST['duration'],
+            due_date=request.POST['due_date'],
+            about_this_course=request.POST['about_this_course'],
+            uploaded_by=request.user,
+            is_active='is_active' in request.POST
+        )
+        
+        if 'image' in request.FILES:
+            course.image = request.FILES['image']
+            course.save()
+            
+        messages.success(request, 'Course created successfully!')
+        return redirect('my_courses')
+    except Exception as e:
+        messages.error(request, f'Error creating course: {str(e)}')
+        return redirect('my_courses')
+
+@login_required
+@require_POST
+def add_lesson(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'manager':
+        messages.error(request, 'Access denied. Managers only.')
+        return redirect('home')
+    
+    course = get_object_or_404(Course, id=request.POST['course_id'], uploaded_by=request.user)
+    
+    try:
+        # Get the highest order number for this course's lessons
+        last_order = Lesson.objects.filter(course=course).order_by('-order').first()
+        new_order = (last_order.order + 1) if last_order else 1
+        
+        lesson = Lesson.objects.create(
+            course=course,
+            title=request.POST['title'],
+            content=request.POST['content'],
+            duration=request.POST['duration'],
+            order=new_order
+        )
+        
+        messages.success(request, 'Lesson added successfully!')
+        return redirect('my_courses')
+    except Exception as e:
+        messages.error(request, f'Error adding lesson: {str(e)}')
+        return redirect('my_courses')
+
+@login_required
+def edit_course(request, course_id):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'manager':
+        messages.error(request, 'Access denied. Managers only.')
+        return redirect('home')
+    
+    course = get_object_or_404(Course, id=course_id, uploaded_by=request.user)
+    
+    if request.method == 'POST':
+        try:
+            course.title = request.POST['title']
+            course.duration = request.POST['duration']
+            course.due_date = request.POST['due_date']
+            course.about_this_course = request.POST['about_this_course']
+            course.is_active = 'is_active' in request.POST
+            
+            if 'image' in request.FILES:
+                course.image = request.FILES['image']
+            
+            course.save()
+            messages.success(request, 'Course updated successfully!')
+            return redirect('my_courses')
+        except Exception as e:
+            messages.error(request, f'Error updating course: {str(e)}')
+            return redirect('my_courses')
+    
+    return render(request, 'edit_course.html', {
+        'course': course,
+        'user_profile': user_profile
+    })
+
+@login_required
+def view_course(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    lessons = course.lesson_set.all().order_by('order')
+    
+    return render(request, 'view_course.html', {
+        'course': course,
+        'lessons': lessons
+    })
+
+@login_required
+def profile_settings(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    
+    if request.method == 'POST':
+        try:
+            # Update User model fields
+            request.user.first_name = request.POST.get('first_name')
+            request.user.last_name = request.POST.get('last_name')
+            request.user.save()
+            
+            # Update UserProfile fields
+            user_profile.headline = request.POST.get('headline')
+            user_profile.bio = request.POST.get('bio')
+            user_profile.phone_number = request.POST.get('phone_number')
+            
+            # Handle profile picture upload
+            if 'profile_pic' in request.FILES:
+                user_profile.profile_pic = request.FILES['profile_pic']
+            
+            # Handle cover image upload
+            if 'cover_image' in request.FILES:
+                user_profile.cover_image = request.FILES['cover_image']
+            
+            user_profile.save()
+            
+            # Handle password change
+            current_password = request.POST.get('current_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if current_password and new_password and confirm_password:
+                if not request.user.check_password(current_password):
+                    messages.error(request, 'Current password is incorrect.')
+                    return redirect('profile_settings')
+                
+                if new_password != confirm_password:
+                    messages.error(request, 'New passwords do not match.')
+                    return redirect('profile_settings')
+                
+                request.user.set_password(new_password)
+                request.user.save()
+                messages.success(request, 'Password updated successfully. Please log in again.')
+                return redirect('login')
+            
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile_settings')
+            
+        except Exception as e:
+            messages.error(request, f'Error updating profile: {str(e)}')
+            return redirect('profile_settings')
+    
+    return render(request, 'profile_settings.html', {
+        'user_profile': user_profile
+    })
