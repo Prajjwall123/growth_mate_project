@@ -14,6 +14,8 @@ from growth_mate_project import settings
 from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 
 
 otp_storage = {}
@@ -75,7 +77,16 @@ def login_view(request):
 
         login(request, user)
         messages.success(request, "Login successful!")
-        return redirect("home") 
+        
+        # Check user role and redirect accordingly
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            if user_profile.role == 'manager':
+                return redirect('manager_dashboard')
+            else:
+                return redirect('home')
+        except UserProfile.DoesNotExist:
+            return redirect('home')
 
     return render(request, "login.html")
 
@@ -136,3 +147,37 @@ def resend_otp(request):
 def my_courses_view(request):
     trending_courses = Course.objects.all().order_by('-due_date')[:6]
     return render(request, "my_courses.html", {"trending_courses": trending_courses})
+
+@login_required
+def manager_dashboard(request):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    # Get courses created by the manager
+    manager_courses = Course.objects.filter(uploaded_by=request.user)
+    
+    # Calculate statistics
+    total_courses = manager_courses.count()
+    active_courses = manager_courses.filter(is_active=True).count()
+    total_enrollments = sum(course.enrollment_set.count() for course in manager_courses)
+    
+    # Get recent activities (last 5)
+    recent_activities = manager_courses.order_by('-created_at')[:5]
+    
+    context = {
+        'user_profile': user_profile,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'total_enrollments': total_enrollments,
+        'recent_activities': recent_activities,
+        'courses': manager_courses[:5],  # Show only 5 courses
+    }
+    
+    return render(request, 'manager_dashboard.html', context)

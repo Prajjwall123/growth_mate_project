@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -11,7 +12,7 @@ class UserProfile(models.Model):
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
 
-    profile_pic = models.ImageField(upload_to='static/profile_images/', blank=True, default='static/assets/images/defaultuser.png')    
+    profile_pic = models.ImageField(upload_to='static/profile_images/', blank=True, default='static/assets/images/defaultuser.jpg')    
     cover_pic = models.ImageField(upload_to='static/cover_images/', blank=True, default='static/assets/images/default_cover.png')    
     first_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50, blank=True, null=True)
@@ -39,6 +40,9 @@ class Course(models.Model):
     due_date = models.DateField()
     about_this_course = models.TextField()
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
@@ -64,3 +68,17 @@ class Section(models.Model):
 
     def __str__(self):
         return self.heading
+
+
+class Enrollment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    completed = models.BooleanField(default=False)
+    progress = models.IntegerField(default=0)  # Store progress as percentage
+
+    class Meta:
+        unique_together = ['user', 'course']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.course.title}"

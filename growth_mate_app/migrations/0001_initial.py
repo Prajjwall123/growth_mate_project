@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('role', models.CharField(choices=[('admin', 'Admin'), ('manager', 'Retail Manager'), ('employee', 'Retail Employee')], default='employee', max_length=10)),
-                ('profile_pic', models.ImageField(blank=True, default='static/assets/images/defaultuser.png', upload_to='static/profile_images/')),
+                ('profile_pic', models.ImageField(blank=True, default='static/assets/images/defaultuser.jpg', upload_to='static/profile_images/')),
                 ('cover_pic', models.ImageField(blank=True, default='static/assets/images/default_cover.png', upload_to='static/cover_images/')),
                 ('first_name', models.CharField(blank=True, max_length=50, null=True)),
                 ('last_name', models.CharField(blank=True, max_length=50, null=True)),

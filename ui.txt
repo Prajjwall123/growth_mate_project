@@ -1,0 +1,86 @@
+LMS UI Description Prompt
+Admin Dashboard
+
+    Header with "GrowthMate" logo, search bar, and welcome message
+    Left sidebar navigation with Home, Users, Courses, Profile Settings, Help Center, and Logout
+    Main content area with:
+        Quick stats section showing Total Users, Active Users, Course Completion, and Student Engagement with trend indicators
+        Popular Courses section displaying course names and student counts
+        Recent Activities section showing recent course-related actions with timestamps
+        System Status section monitoring server uptime, response time, and storage usage
+        Learner Progress Report with progress bars for individual learners
+        Active Courses and Traffic Sources sections at the bottom
+
+User Management Page
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        User statistics showing Total Users, Active Users, Inactive Users, and Course Completion with trend indicators
+        User list table with columns for User, Enrolled Courses, Phone, Country, Status, and Actions
+        Filtering, sorting, and export options above the user list
+        Pagination at the bottom
+        User Activity and Course Distribution charts at the bottom
+
+Course Management Page
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        Course statistics showing Total Courses, Archive Courses, Draft/Pending, and Enrollments with trend indicators
+        Course Details table with columns for Course Title, Instructor, Category, Enrollment Count, and Status
+        Filtering, exporting, printing, sorting, and columns customization options above the course table
+        Additional course metrics at the bottom
+
+Success Pages
+
+    Minimalist design with:
+        Centered confirmation message (Completed Successfully, Content Published Successfully, Changes Saved Successfully)
+        Subtle checkmark icon
+        "Return to your Dashboard" button
+        Footer with privacy policy, terms of service, language selection, and help links
+
+Employee Dashboard
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        Welcome message with learning journey prompt
+        Quick access section for resuming courses, viewing next sessions, and checking pending tasks
+        Progress metrics showing Overall Progress, Total Courses, Active Courses, and Learning Time
+        Achievements section displaying earned badges
+        Course Summary with progress indicators for individual courses
+
+Manager Dashboard
+
+    Similar to Admin Dashboard but:
+        Only shows courses created by the Manager
+        Cannot see courses created by other Managers
+        User engagement stats only for Employees
+
+Profile Settings
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        Profile header with cover photo and "Change Cover" button
+        Personal Information form with First Name, Last Name, Professional Headline, and Bio
+        Contact Information form with Email Address and Phone Number
+        Security & Authentication section with password management
+
+Course Creation Page
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        Course Details form including Course Title, Difficulty Level, Category, Tags, and Description
+        Course Thumbnail upload section with drag-and-drop functionality
+        Publishing Settings with visibility toggle, comments toggle, schedule publication, student limit, course language, duration, and prerequisites
+
+My Courses Page
+
+    Header with "GrowthMate" logo and search bar
+    Left sidebar navigation
+    Main content area with:
+        In-Progress Courses section showing course images, titles, durations, due dates, and progress indicators with "Resume Course" buttons
+        Trending Courses section with course images, titles, ratings, and "Enroll Now" buttons
