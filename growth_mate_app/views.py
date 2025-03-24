@@ -8,12 +8,13 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from .models import Course, UserProfile
+from .models import Course, UserProfile, ChatMessage
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
+from .gemini_service import get_bot_response
 
 
 otp_storage = {}
@@ -136,3 +137,52 @@ def resend_otp(request):
 def my_courses_view(request):
     trending_courses = Course.objects.all().order_by('-due_date')[:6]
     return render(request, "my_courses.html", {"trending_courses": trending_courses})
+
+def chat_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    messages = ChatMessage.objects.filter(user=request.user).order_by('timestamp')
+    return render(request, 'chat.html', {'messages': messages})
+
+def send_message(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'User not authenticated'}, status=401)
+    
+    if request.method == 'POST':
+        message = request.POST.get('message')
+        if not message:
+            return JsonResponse({'error': 'Message is required'}, status=400)
+        
+        # Save user message
+        user_message = ChatMessage.objects.create(
+            user=request.user,
+            message=message,
+            is_bot=False
+        )
+        
+        # Get chat history
+        chat_history = ChatMessage.objects.filter(user=request.user).order_by('timestamp')[:5]
+        
+        # Get bot response
+        bot_response = get_bot_response(message, chat_history)
+        
+        # Save bot response
+        bot_message = ChatMessage.objects.create(
+            user=request.user,
+            message=bot_response,
+            is_bot=True
+        )
+        
+        return JsonResponse({
+            'user_message': {
+                'message': user_message.message,
+                'timestamp': user_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            },
+            'bot_message': {
+                'message': bot_message.message,
+                'timestamp': bot_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        })
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
