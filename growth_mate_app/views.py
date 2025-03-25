@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Count, Avg
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 
@@ -169,24 +169,23 @@ def manager_dashboard(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
-    # Get courses created by the manager
-    manager_courses = Course.objects.filter(uploaded_by=request.user)
-    
-    # Calculate statistics
-    total_courses = manager_courses.count()
-    active_courses = manager_courses.filter(is_active=True).count()
-    total_enrollments = sum(course.enrollment_set.count() for course in manager_courses)
-    
-    # Get recent activities (last 5)
-    recent_activities = manager_courses.order_by('-created_at')[:5]
-    
+    # Static data for dashboard
     context = {
         'user_profile': user_profile,
-        'total_courses': total_courses,
-        'active_courses': active_courses,
-        'total_enrollments': total_enrollments,
-        'recent_activities': recent_activities,
-        'courses': manager_courses[:5],  # Show only 5 courses
+        'total_users': 324,
+        'total_courses': 98,
+        'active_courses': 92,
+        'top_students': [
+            {'name': 'Uttam Shrestha', 'progress': 95},
+            {'name': 'Nisha Khadka', 'progress': 40},
+            {'name': 'Simran KC', 'progress': 50},
+            {'name': 'Sarah Johnson', 'progress': 85}
+        ],
+        'course_completion': [
+            {'title': 'Health Science', 'progress': 70, 'total': 100},
+            {'title': 'Fitness', 'progress': 40, 'total': 100},
+            {'title': 'Sports Management', 'progress': 50, 'total': 100}
+        ]
     }
     
     return render(request, 'manager_dashboard.html', context)
@@ -227,10 +226,10 @@ def add_course(request):
             course.save()
             
         messages.success(request, 'Course created successfully!')
-        return redirect('my_courses')
+        return redirect('manager_courses')
     except Exception as e:
         messages.error(request, f'Error creating course: {str(e)}')
-        return redirect('my_courses')
+        return redirect('manager_courses')
 
 @login_required
 @require_POST
@@ -256,10 +255,10 @@ def add_lesson(request):
         )
         
         messages.success(request, 'Lesson added successfully!')
-        return redirect('my_courses')
+        return redirect('manager_courses')
     except Exception as e:
         messages.error(request, f'Error adding lesson: {str(e)}')
-        return redirect('my_courses')
+        return redirect('manager_courses')
 
 @login_required
 def edit_course(request, course_id):
@@ -283,10 +282,10 @@ def edit_course(request, course_id):
             
             course.save()
             messages.success(request, 'Course updated successfully!')
-            return redirect('my_courses')
+            return redirect('manager_courses')
         except Exception as e:
             messages.error(request, f'Error updating course: {str(e)}')
-            return redirect('my_courses')
+            return redirect('manager_courses')
     
     return render(request, 'edit_course.html', {
         'course': course,
@@ -358,3 +357,59 @@ def profile_settings(request):
     return render(request, 'profile_settings.html', {
         'user_profile': user_profile
     })
+
+@login_required
+def users_view(request):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    # Static data for users page
+    context = {
+        'user_profile': user_profile,
+        'stats': {
+            'total_users': 234,
+            'active_users': 136,
+            'inactive_users': 98,
+            'course_completion': 90
+        }
+    }
+    
+    return render(request, 'manager/users.html', context)
+
+@login_required
+def courses_view(request):
+    # Check if user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, 'Access Denied: Manager privileges required.')
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
+    # Static data for courses page
+    context = {
+        'user_profile': user_profile,
+        'stats': {
+            'total_courses': 56,
+            'total_courses_trend': '+12%',
+            'archive_courses': 14,
+            'archive_courses_trend': '0%',
+            'draft_pending': 33,
+            'draft_pending_trend': '-5%',
+            'enrollments': 22,
+            'enrollments_trend': '+8%',
+        },
+        'active_courses_count': 42,
+        'course_hours': 320,
+    }
+
+    return render(request, 'manager/courses.html', context)

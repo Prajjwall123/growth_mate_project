@@ -1,0 +1,232 @@
+{% extends 'manager/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100">
+    <!-- Main Content -->
+    <main class="ml-64 p-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">Courses</h1>
+        </div>
+
+        <!-- Header with Search and Add Course Button -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="relative w-96">
+                <input type="text" placeholder="Search ..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <button class="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add/Edit Course
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <!-- Total Courses -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700">Total Courses</h3>
+                        <p class="text-3xl font-bold text-gray-900">56</p>
+                    </div>
+                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-green-500 text-sm">12% increase</span>
+                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
+                        <polyline points="0,16 16,8 32,20 48,12 64,16" 
+                                fill="none" 
+                                stroke="#22c55e" 
+                                stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Archive Courses -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700">Archive Courses</h3>
+                        <p class="text-3xl font-bold text-gray-900">14</p>
+                    </div>
+                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-gray-500 text-sm">No change</span>
+                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
+                        <line x1="0" y1="16" x2="64" y2="16" 
+                              stroke="#6b7280" 
+                              stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Draft/Pending -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700">Draft/Pending</h3>
+                        <p class="text-3xl font-bold text-gray-900">33</p>
+                    </div>
+                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-red-500 text-sm">5% decrease</span>
+                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
+                        <polyline points="0,16 16,24 32,12 48,20 64,16" 
+                                fill="none" 
+                                stroke="#ef4444" 
+                                stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Enrollments -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700">Enrollments</h3>
+                        <p class="text-3xl font-bold text-gray-900">22</p>
+                    </div>
+                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-green-500 text-sm">8% increase</span>
+                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
+                        <polyline points="0,16 16,8 32,20 48,12 64,16" 
+                                fill="none" 
+                                stroke="#22c55e" 
+                                stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Details Section -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">Course Details</h2>
+                <a href="#" class="text-orange-500 hover:text-orange-600">View All</a>
+            </div>
+
+            <!-- Table Controls -->
+            <div class="flex gap-4 mb-4">
+                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                    Filter
+                </button>
+                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                    Export
+                </button>
+                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                    Print
+                </button>
+                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                    Sort
+                </button>
+                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                    Columns
+                </button>
+            </div>
+
+            <!-- Course Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Course Title</th>
+                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Instructor</th>
+                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Category</th>
+                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Enrollment Count</th>
+                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Business Fundamentals</td>
+                            <td class="py-4 px-4">John Karki</td>
+                            <td class="py-4 px-4">Business</td>
+                            <td class="py-4 px-4">89</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Metals Fundamentals</td>
+                            <td class="py-4 px-4">Subhasis Regmi</td>
+                            <td class="py-4 px-4">Commodities</td>
+                            <td class="py-4 px-4">91</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Plastic Reuse Tech</td>
+                            <td class="py-4 px-4">Peter Khadka</td>
+                            <td class="py-4 px-4">Technology</td>
+                            <td class="py-4 px-4">111</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-gray-600 bg-gray-100 rounded-full">Archived</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Digital Marketing</td>
+                            <td class="py-4 px-4">Sarah Johnson</td>
+                            <td class="py-4 px-4">Marketing</td>
+                            <td class="py-4 px-4">156</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Data Science Basics</td>
+                            <td class="py-4 px-4">Michael Chen</td>
+                            <td class="py-4 px-4">Technology</td>
+                            <td class="py-4 px-4">203</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="py-4 px-4">Financial Planning</td>
+                            <td class="py-4 px-4">Emma Wilson</td>
+                            <td class="py-4 px-4">Finance</td>
+                            <td class="py-4 px-4">167</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-yellow-600 bg-yellow-100 rounded-full">Draft</span></td>
+                        </tr>
+                        <tr>
+                            <td class="py-4 px-4">Web Development</td>
+                            <td class="py-4 px-4">David Kim</td>
+                            <td class="py-4 px-4">Technology</td>
+                            <td class="py-4 px-4">245</td>
+                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bottom Stats Section -->
+        <div class="grid grid-cols-2 gap-6 mt-8">
+            <!-- Active Courses -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Active Courses</h3>
+                <div class="flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-orange-500">42</div>
+                        <div class="text-sm text-gray-500 mt-2">Total Active Courses</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Hours -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Course Hours</h3>
+                <div class="flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-orange-500">320</div>
+                        <div class="text-sm text-gray-500 mt-2">Total Course Hours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %} 
