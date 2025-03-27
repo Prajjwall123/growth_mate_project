@@ -106,6 +106,8 @@ def login_view(request):
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.role == 'manager':
                 return redirect('manager_dashboard')
+            elif user_profile.role == 'employee':
+                return redirect('employee_dashboard')
             else:
                 return redirect('home')
         except UserProfile.DoesNotExist:
@@ -441,9 +443,28 @@ def select_role(request):
             # Redirect based on role
             if role == 'manager':
                 return redirect('manager_dashboard')
-            else:
+            elif role == 'employee':
                 return redirect('employee_dashboard')
+            else:
+                return redirect('home')
         else:
             messages.error(request, 'Invalid role selection.')
             
     return render(request, 'select_role.html')
+
+@login_required
+def employee_dashboard(request):
+    # Check if the user is an employee
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'employee':
+            messages.error(request, "Access denied. Employee privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    context = {
+        'user_profile': user_profile,
+    }
+    return render(request, 'employee/dashboard.html', context)    

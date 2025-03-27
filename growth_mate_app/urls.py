@@ -25,6 +25,9 @@ urlpatterns = [
 
     # Profile Settings Route
     path('profile/settings/', views.profile_settings, name='profile_settings'),
+
+    # Employee Dashboard Route
+    path('employee/dashboard/', views.employee_dashboard, name='employee_dashboard'),
 ]
 
 # Serve media files during development
