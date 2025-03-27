@@ -5,10 +5,27 @@ from django.db import models
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'first_name', 'last_name', 'role', 'email', 'phone_number')
-    search_fields = ('first_name', 'last_name', 'email', 'phone_number')
-    list_filter = ('role', 'gender')
+    list_display = ['get_user', 'role', 'get_first_name', 'get_last_name', 'get_email', 'get_phone_number']
 
+    def get_user(self, obj):
+        return obj.user.username
+    get_user.short_description = 'User'
+
+    def get_first_name(self, obj):
+        return obj.first_name
+    get_first_name.short_description = 'First Name'
+
+    def get_last_name(self, obj):
+        return obj.last_name
+    get_last_name.short_description = 'Last Name'
+
+    def get_email(self, obj):
+        return obj.email
+    get_email.short_description = 'Email'
+
+    def get_phone_number(self, obj):
+        return obj.phone_number
+    get_phone_number.short_description = 'Phone Number'
 
 
 class SectionInline(admin.StackedInline):

@@ -321,47 +321,36 @@ def profile_settings(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
-        messages.error(request, 'User profile not found.')
-        return redirect('home')
+        user_profile = UserProfile.objects.create(user=request.user)
 
     if request.method == 'POST':
-        # Handle profile picture upload
-        if 'profile_picture' in request.FILES:
-            user_profile.profile_picture = request.FILES['profile_picture']
-            user_profile.save()
+        # Handle file uploads
+        if 'profile_pic' in request.FILES:
+            user_profile.profile_pic = request.FILES['profile_pic']
+        if 'cover_image' in request.FILES:
+            user_profile.cover_image = request.FILES['cover_image']
 
-        # Update user information
-        request.user.first_name = request.POST.get('first_name')
-        request.user.last_name = request.POST.get('last_name')
-        request.user.email = request.POST.get('email')
+        # Update user fields
+        request.user.first_name = request.POST.get('first_name', request.user.first_name)
+        request.user.last_name = request.POST.get('last_name', request.user.last_name)
         request.user.save()
 
-        # Update user profile information
-        user_profile.phone = request.POST.get('phone')
-        user_profile.country = request.POST.get('country')
-        user_profile.city = request.POST.get('city')
-        user_profile.email_notifications = request.POST.get('email_notifications') == 'on'
-        user_profile.sms_notifications = request.POST.get('sms_notifications') == 'on'
+        # Update profile fields
+        user_profile.professional_headline = request.POST.get('professional_headline', user_profile.professional_headline)
+        user_profile.bio = request.POST.get('bio', user_profile.bio)
+        user_profile.phone = request.POST.get('phone', user_profile.phone)
         user_profile.save()
 
-        # Handle password change if provided
+        # Verify password if provided (optional security check)
         current_password = request.POST.get('current_password')
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-
-        if current_password and new_password and confirm_password:
-            if not request.user.check_password(current_password):
-                messages.error(request, 'Current password is incorrect.')
-            elif new_password != confirm_password:
-                messages.error(request, 'New passwords do not match.')
+        if current_password:
+            if request.user.check_password(current_password):
+                messages.success(request, 'Profile updated successfully.')
             else:
-                request.user.set_password(new_password)
-                request.user.save()
-                messages.success(request, 'Password updated successfully.')
-                # Update session to prevent logout
-                update_session_auth_hash(request, request.user)
+                messages.error(request, 'Current password is incorrect.')
+        else:
+            messages.success(request, 'Profile updated successfully.')
 
-        messages.success(request, 'Profile updated successfully.')
         return redirect('profile_settings')
 
     context = {
