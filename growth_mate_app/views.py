@@ -3,7 +3,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import EmailMessage, send_mail
 from django.template.loader import render_to_string
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.models import User
 import random
 from django.contrib import messages
@@ -18,47 +18,61 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Avg
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
+from django.contrib.auth.hashers import make_password
+from django.utils import timezone
+from social_django.utils import load_strategy, load_backend
+from social_core.backends.oauth import BaseOAuth2PKCE
+from social_core.exceptions import MissingBackend
 
 
 otp_storage = {}
 
 def signup(request):
     if request.method == "POST":
+        email = request.POST.get("email")
+        password = request.POST.get("password")
         first_name = request.POST.get("first_name")
         last_name = request.POST.get("last_name")
-        email = request.POST.get("email")
-        role = request.POST.get("role") 
-        password1 = request.POST.get("password1")
-        password2 = request.POST.get("password2")
-
-        if role not in ["manager", "employee"]:
-            messages.error(request, "Invalid role selection.")
-            return redirect("signup")
+        role = request.POST.get("role")
 
         if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already registered, try another email.")
+            messages.error(request, "Email already registered.")
             return redirect("signup")
 
-        if password1 != password2:
-            messages.error(request, "Passwords do not match!")
-            return redirect("signup")
+        # Create user
+        user = User.objects.create_user(
+            username=email,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
 
-        otp = str(random.randint(100000, 999999))
-        otp_storage[email] = otp  
+        # Create user profile
+        UserProfile.objects.create(
+            user=user,
+            role=role,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
 
-        email_subject = "Your OTP for Email Verification"
-        email_message = f"Hello {first_name},\n\nYour One-Time Password (OTP) for verification is: {otp}\n\nEnter this OTP on the website to activate your account.\n\nThank you!"
-        send_mail(email_subject, email_message, settings.EMAIL_HOST_USER, [email], fail_silently=True)
+        # Generate and send OTP
+        otp = ''.join(random.choices(string.digits, k=6))
+        user_profile = UserProfile.objects.get(user=user)
+        user_profile.otp = otp
+        user_profile.otp_created_at = timezone.now()
+        user_profile.save()
 
-        request.session['temp_user_data'] = {
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email,
-            'password': password1,
-            'role': role
-        }
+        send_mail(
+            'Verify your email',
+            f'Your OTP is: {otp}',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
 
-        messages.success(request, "An OTP has been sent to your email. Please enter it to verify your account.")
+        messages.success(request, "Registration successful! Please check your email for OTP verification.")
         return redirect("verify_otp")
 
     return render(request, "signup.html")
@@ -188,7 +202,7 @@ def manager_dashboard(request):
         ]
     }
     
-    return render(request, 'manager_dashboard.html', context)
+    return render(request, 'manager/dashboard.html', context)
 
 @login_required
 def my_courses(request):
@@ -304,59 +318,56 @@ def view_course(request, course_id):
 
 @login_required
 def profile_settings(request):
-    user_profile = get_object_or_404(UserProfile, user=request.user)
-    
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
     if request.method == 'POST':
-        try:
-            # Update User model fields
-            request.user.first_name = request.POST.get('first_name')
-            request.user.last_name = request.POST.get('last_name')
-            request.user.save()
-            
-            # Update UserProfile fields
-            user_profile.headline = request.POST.get('headline')
-            user_profile.bio = request.POST.get('bio')
-            user_profile.phone_number = request.POST.get('phone_number')
-            
-            # Handle profile picture upload
-            if 'profile_pic' in request.FILES:
-                user_profile.profile_pic = request.FILES['profile_pic']
-            
-            # Handle cover image upload
-            if 'cover_image' in request.FILES:
-                user_profile.cover_image = request.FILES['cover_image']
-            
+        # Handle profile picture upload
+        if 'profile_picture' in request.FILES:
+            user_profile.profile_picture = request.FILES['profile_picture']
             user_profile.save()
-            
-            # Handle password change
-            current_password = request.POST.get('current_password')
-            new_password = request.POST.get('new_password')
-            confirm_password = request.POST.get('confirm_password')
-            
-            if current_password and new_password and confirm_password:
-                if not request.user.check_password(current_password):
-                    messages.error(request, 'Current password is incorrect.')
-                    return redirect('profile_settings')
-                
-                if new_password != confirm_password:
-                    messages.error(request, 'New passwords do not match.')
-                    return redirect('profile_settings')
-                
+
+        # Update user information
+        request.user.first_name = request.POST.get('first_name')
+        request.user.last_name = request.POST.get('last_name')
+        request.user.email = request.POST.get('email')
+        request.user.save()
+
+        # Update user profile information
+        user_profile.phone = request.POST.get('phone')
+        user_profile.country = request.POST.get('country')
+        user_profile.city = request.POST.get('city')
+        user_profile.email_notifications = request.POST.get('email_notifications') == 'on'
+        user_profile.sms_notifications = request.POST.get('sms_notifications') == 'on'
+        user_profile.save()
+
+        # Handle password change if provided
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if current_password and new_password and confirm_password:
+            if not request.user.check_password(current_password):
+                messages.error(request, 'Current password is incorrect.')
+            elif new_password != confirm_password:
+                messages.error(request, 'New passwords do not match.')
+            else:
                 request.user.set_password(new_password)
                 request.user.save()
-                messages.success(request, 'Password updated successfully. Please log in again.')
-                return redirect('login')
-            
-            messages.success(request, 'Profile updated successfully!')
-            return redirect('profile_settings')
-            
-        except Exception as e:
-            messages.error(request, f'Error updating profile: {str(e)}')
-            return redirect('profile_settings')
-    
-    return render(request, 'profile_settings.html', {
-        'user_profile': user_profile
-    })
+                messages.success(request, 'Password updated successfully.')
+                # Update session to prevent logout
+                update_session_auth_hash(request, request.user)
+
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('profile_settings')
+
+    context = {
+        'user_profile': user_profile,
+    }
+    return render(request, 'manager/profile_settings.html', context)
 
 @login_required
 def users_view(request):
@@ -413,3 +424,37 @@ def courses_view(request):
     }
 
     return render(request, 'manager/courses.html', context)
+
+@login_required
+def select_role(request):
+    if request.method == 'POST':
+        role = request.POST.get('role')
+        user_id = request.session.get('user_id')
+        
+        if user_id and role:
+            user = User.objects.get(id=user_id)
+            
+            # Create user profile with social data if available
+            UserProfile.objects.create(
+                user=user,
+                role=role,
+                email=request.session.get('social_email', user.email),
+                first_name=request.session.get('social_first_name', user.first_name),
+                last_name=request.session.get('social_last_name', user.last_name)
+            )
+            
+            # Clean up session
+            for key in ['user_id', 'social_email', 'social_first_name', 'social_last_name']:
+                request.session.pop(key, None)
+            
+            messages.success(request, 'Profile created successfully!')
+            
+            # Redirect based on role
+            if role == 'manager':
+                return redirect('manager_dashboard')
+            else:
+                return redirect('employee_dashboard')
+        else:
+            messages.error(request, 'Invalid role selection.')
+            
+    return render(request, 'select_role.html')

@@ -22,13 +22,13 @@
         
         <!-- Navigation Links -->
         <ul class="mt-6 space-y-1">
-            <!-- Home -->
-            <li class="px-4 py-2 {% if request.resolver_match.url_name == 'home' %}bg-orange-50{% endif %}">
-                <a href="{% url 'home' %}" class="flex items-center {% if request.resolver_match.url_name == 'home' %}text-orange-600{% else %}text-gray-600 hover:text-orange-600{% endif %}">
+            <!-- Manager Dashboard -->
+            <li class="px-4 py-2 {% if request.resolver_match.url_name == 'manager_dashboard' %}bg-orange-50{% endif %}">
+                <a href="{% url 'manager_dashboard' %}" class="flex items-center {% if request.resolver_match.url_name == 'manager_dashboard' %}text-orange-600{% else %}text-gray-600 hover:text-orange-600{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
-                    Home
+                    Manager Dashboard
                 </a>
             </li>
 
@@ -75,12 +75,12 @@
 
             <!-- Logout -->
             <li class="px-4 py-2">
-                <button onclick="confirmLogout()" class="w-full flex items-center text-gray-600 hover:text-orange-600">
+                <a href="{% url 'logout' %}" class="flex items-center text-gray-600 hover:text-orange-600">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
                     Logout
-                </button>
+                </a>
             </li>
         </ul>
     </nav>

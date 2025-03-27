@@ -10,7 +10,7 @@ class UserProfile(models.Model):
         ('manager', 'Retail Manager'),
         ('employee', 'Retail Employee'),
     ]
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
 
     profile_pic = models.ImageField(upload_to='static/profile_pics/', blank=True, default='static/assets/images/default_profile.png')
     cover_image = models.ImageField(upload_to='static/cover_images/', blank=True, default='static/assets/images/default_cover.png')
@@ -30,6 +30,15 @@ class UserProfile(models.Model):
         ('other', 'Other'),
     ]
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True)
+
+    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    phone = models.CharField(max_length=15, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.role}"

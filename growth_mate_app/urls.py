@@ -15,5 +15,5 @@ urlpatterns = [
     path('manager/courses/<int:course_id>/edit/', views.edit_course, name='edit_course'),
     path('manager/courses/<int:course_id>/', views.view_course, name='view_course'),
     path('manager/lessons/add/', views.add_lesson, name='add_lesson'),
-    path('manager/profile/settings/', views.profile_settings, name='profile_settings'),
+    path('profile/settings/', views.profile_settings, name='profile_settings'),
 ]
