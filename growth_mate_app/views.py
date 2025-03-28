@@ -9,14 +9,14 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson
+from .models import Course, UserProfile, Lesson, Enrollment, CourseSection
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Avg, F
+from django.db.models import Count, Avg, F, Q
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password
@@ -24,6 +24,8 @@ from django.utils import timezone
 from social_django.utils import load_strategy, load_backend
 from social_core.backends.oauth import BaseOAuth2PKCE
 from social_core.exceptions import MissingBackend
+import json
+from django.urls import reverse
 
 
 otp_storage = {}
@@ -170,10 +172,6 @@ def resend_otp(request):
         return JsonResponse({"message": "OTP has been resent!", "success": True})
     return JsonResponse({"message": "Invalid request", "success": False}, status=400)
 
-def my_courses_view(request):
-    trending_courses = Course.objects.all().order_by('-due_date')[:6]
-    return render(request, "my_courses.html", {"trending_courses": trending_courses})
-
 @login_required
 def manager_dashboard(request):
     # Check if the user is a manager
@@ -186,93 +184,82 @@ def manager_dashboard(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
-    # Static data for dashboard
+    # Get total users (employees)
+    total_users = UserProfile.objects.filter(role='employee').count()
+    
+    # Get courses created by this manager
+    manager_courses = Course.objects.filter(uploaded_by=request.user)
+    total_courses = manager_courses.count()
+    active_courses = manager_courses.filter(is_active=True).count()
+    
+    # Get top students based on course progress
+    top_students = []
+    enrollments = Enrollment.objects.filter(course__in=manager_courses).values('user').annotate(
+        avg_progress=Avg('progress')
+    ).order_by('-avg_progress')[:4]
+    
+    for enrollment in enrollments:
+        user = User.objects.get(id=enrollment['user'])
+        top_students.append({
+            'name': f"{user.first_name} {user.last_name}",
+            'progress': round(enrollment['avg_progress'])
+        })
+    
+    # Get course completion data
+    course_completion = []
+    for course in manager_courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        if enrollments.exists():
+            avg_progress = enrollments.aggregate(avg_progress=Avg('progress'))['avg_progress']
+            course_completion.append({
+                'title': course.title,
+                'progress': round(avg_progress),
+                'total': 100
+            })
+
     context = {
         'user_profile': user_profile,
-        'total_users': 324,
-        'total_courses': 98,
-        'active_courses': 92,
-        'top_students': [
-            {'name': 'Uttam Shrestha', 'progress': 95},
-            {'name': 'Nisha Khadka', 'progress': 40},
-            {'name': 'Simran KC', 'progress': 50},
-            {'name': 'Sarah Johnson', 'progress': 85}
-        ],
-        'course_completion': [
-            {'title': 'Health Science', 'progress': 70, 'total': 100},
-            {'title': 'Fitness', 'progress': 40, 'total': 100},
-            {'title': 'Sports Management', 'progress': 50, 'total': 100}
-        ]
+        'total_users': total_users,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'top_students': top_students,
+        'course_completion': course_completion
     }
     
     return render(request, 'manager/dashboard.html', context)
 
 @login_required
 def my_courses(request):
-    # Placeholder data for in-progress courses
-    in_progress_courses = [
-        {
-            'title': 'Customer Service Excellence',
-            'duration': '40 mins',
-            'due_date': 'Feb 20, 2025',
-            'progress': 70,
-            'image': 'https://picsum.photos/800/600?random=1'
-        },
-        {
-            'title': 'Products Knowledge',
-            'duration': '3hrs',
-            'due_date': 'Jan 30, 2025',
-            'progress': 45,
-            'image': 'https://picsum.photos/800/600?random=2'
-        },
-        {
-            'title': 'Communication Skills',
-            'duration': '2hrs',
-            'due_date': 'Mar 15, 2025',
-            'progress': 30,
-            'image': 'https://picsum.photos/800/600?random=3'
-        },
-        {
-            'title': 'Leadership Training',
-            'duration': '5hrs',
-            'due_date': 'Apr 5, 2025',
-            'progress': 15,
-            'image': 'https://picsum.photos/800/600?random=4'
-        }
-    ]
+    # Check if user is an employee
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'employee':
+            messages.error(request, "Access denied. Employee privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    # Get enrolled courses
+    enrolled_courses = Course.objects.filter(enrollment__user=request.user)
     
-    # Placeholder data for trending courses
-    trending_courses = [
-        {
-            'title': 'Data Science Fundamentals',
-            'rating': 4.5,
-            'reviews': '2.3k',
-            'image': 'https://picsum.photos/800/600?random=5'
-        },
-        {
-            'title': 'Advanced Digital Marketing',
-            'rating': 4.0,
-            'reviews': '1.8k',
-            'image': 'https://picsum.photos/800/600?random=6'
-        },
-        {
-            'title': 'UI/UX Design Masterclass',
-            'rating': 5.0,
-            'reviews': '956',
-            'image': 'https://picsum.photos/800/600?random=7'
-        },
-        {
-            'title': 'Agile Project Management',
-            'rating': 4.2,
-            'reviews': '1.2k',
-            'image': 'https://picsum.photos/800/600?random=8'
-        }
-    ]
+    # Get available courses (courses not enrolled in)
+    available_courses = Course.objects.filter(is_active=True).exclude(enrollment__user=request.user)
+    
+    # Get course progress for enrolled courses
+    course_progress = []
+    for course in enrolled_courses:
+        enrollment = Enrollment.objects.get(user=request.user, course=course)
+        course_progress.append({
+            'course': course,
+            'progress': enrollment.progress,
+            'enrollment': enrollment
+        })
     
     context = {
-        'in_progress_courses': in_progress_courses,
-        'trending_courses': trending_courses,
-        'user_profile': request.user
+        'user_profile': user_profile,
+        'enrolled_courses': course_progress,
+        'available_courses': available_courses
     }
     
     return render(request, 'employee/my_courses.html', context)
@@ -280,30 +267,53 @@ def my_courses(request):
 @login_required
 @require_POST
 def add_course(request):
-    user_profile = get_object_or_404(UserProfile, user=request.user)
-    if user_profile.role != 'manager':
-        messages.error(request, 'Access denied. Managers only.')
-        return redirect('home')
-    
+    # Check if the user is a manager
     try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            return JsonResponse({'success': False, 'message': 'Access denied. Manager privileges required.'})
+    except UserProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'User profile not found.'})
+
+    try:
+        # Get form data
+        title = request.POST.get('title')
+        duration = request.POST.get('duration')
+        due_date = request.POST.get('due_date')
+        description = request.POST.get('description')
+        image = request.FILES.get('image')
+
+        # Validate required fields
+        if not all([title, duration, due_date, description]):
+            messages.error(request, "Please fill in all required fields.")
+            return redirect('create_course')
+
+        # Create course
         course = Course.objects.create(
-            title=request.POST['title'],
-            duration=request.POST['duration'],
-            due_date=request.POST['due_date'],
-            about_this_course=request.POST['about_this_course'],
-            uploaded_by=request.user,
-            is_active='is_active' in request.POST
+            title=title,
+            duration=duration,
+            due_date=due_date,
+            description=description,
+            uploaded_by=request.user
         )
-        
-        if 'image' in request.FILES:
-            course.image = request.FILES['image']
+
+        # Handle image upload if provided
+        if image:
+            course.image = image
             course.save()
-            
-        messages.success(request, 'Course created successfully!')
-        return redirect('manager_courses')
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Course created successfully.',
+            'course_id': course.id,
+            'course_title': course.title
+        })
+
     except Exception as e:
-        messages.error(request, f'Error creating course: {str(e)}')
-        return redirect('manager_courses')
+        return JsonResponse({
+            'success': False,
+            'message': f'Error creating course: {str(e)}'
+        })
 
 @login_required
 @require_POST
@@ -348,7 +358,7 @@ def edit_course(request, course_id):
             course.title = request.POST['title']
             course.duration = request.POST['duration']
             course.due_date = request.POST['due_date']
-            course.about_this_course = request.POST['about_this_course']
+            course.description = request.POST['description']
             course.is_active = 'is_active' in request.POST
             
             if 'image' in request.FILES:
@@ -369,11 +379,18 @@ def edit_course(request, course_id):
 @login_required
 def view_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
-    lessons = course.lesson_set.all().order_by('order')
+    
+    # Check if user has permission to view this course
+    if not course.is_visible_to(request.user):
+        messages.error(request, "Access denied. You don't have permission to view this course.")
+        return redirect('home')
+
+    sections = course.sections.all().prefetch_related('lessons')
     
     return render(request, 'view_course.html', {
         'course': course,
-        'lessons': lessons
+        'sections': sections,
+        'can_edit': request.user.userprofile.role == 'admin' or course.uploaded_by == request.user
     })
 
 @login_required
@@ -471,29 +488,52 @@ def courses_view(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
         if user_profile.role != 'manager':
-            messages.error(request, 'Access Denied: Manager privileges required.')
+            messages.error(request, "Access denied. Manager privileges required.")
             return redirect('home')
     except UserProfile.DoesNotExist:
-        messages.error(request, 'User profile not found.')
+        messages.error(request, "User profile not found.")
         return redirect('home')
 
-    # Static data for courses page
+    # Get search query
+    search_query = request.GET.get('search', '')
+    
+    # Get courses created by this manager
+    courses = Course.objects.filter(uploaded_by=request.user)
+    
+    # Apply search filter if query exists
+    if search_query:
+        courses = courses.filter(title__icontains=search_query)
+    
+    # Get course statistics
+    total_courses = courses.count()
+    active_courses = courses.filter(is_active=True).count()
+    
+    # Get enrollment statistics for each course
+    course_stats = []
+    for course in courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        total_enrollments = enrollments.count()
+        avg_progress = enrollments.aggregate(avg_progress=Avg('progress'))['avg_progress'] or 0
+        
+        course_stats.append({
+            'course': course,
+            'total_enrollments': total_enrollments,
+            'avg_progress': round(avg_progress)
+        })
+    
+    # Paginate results
+    paginator = Paginator(course_stats, 10)  # Show 10 courses per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     context = {
         'user_profile': user_profile,
-        'stats': {
-            'total_courses': 56,
-            'total_courses_trend': '+12%',
-            'archive_courses': 14,
-            'archive_courses_trend': '0%',
-            'draft_pending': 33,
-            'draft_pending_trend': '-5%',
-            'enrollments': 22,
-            'enrollments_trend': '+8%',
-        },
-        'active_courses_count': 42,
-        'course_hours': 320,
+        'courses': page_obj,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'search_query': search_query
     }
-
+    
     return render(request, 'manager/courses.html', context)
 
 @login_required
@@ -544,9 +584,40 @@ def employee_dashboard(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
+    # Get employee's enrollments
+    enrollments = Enrollment.objects.filter(user=request.user)
+    
+    # Calculate overall progress
+    overall_progress = 0
+    if enrollments.exists():
+        overall_progress = round(enrollments.aggregate(avg_progress=Avg('progress'))['avg_progress'] or 0)
+    
+    # Get total courses and active courses
+    total_courses = enrollments.count()
+    active_courses = enrollments.filter(course__is_active=True).count()
+    
+    # Calculate learning time (sum of course durations)
+    learning_time = sum(int(course.duration.split()[0]) for course in Course.objects.filter(
+        enrollment__user=request.user
+    ).distinct())
+    
+    # Get course progress data
+    course_progress = []
+    for enrollment in enrollments:
+        course_progress.append({
+            'title': enrollment.course.title,
+            'progress': enrollment.progress
+        })
+
     context = {
         'user_profile': user_profile,
+        'overall_progress': overall_progress,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'learning_time': learning_time,
+        'course_progress': course_progress
     }
+    
     return render(request, 'employee/dashboard.html', context)
 
 @login_required
@@ -584,4 +655,240 @@ def course_details(request, course_id=None):
         }
     }
     
-    return render(request, 'employee/course_details.html', {'course': course_data})    
+    return render(request, 'employee/course_details.html', {'course': course_data})
+
+@login_required
+@require_POST
+def enroll_course(request, course_id):
+    # Check if user is an employee
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'employee':
+            return JsonResponse({'success': False, 'message': 'Access denied. Employee privileges required.'})
+    except UserProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'User profile not found.'})
+
+    try:
+        course = Course.objects.get(id=course_id)
+        
+        # Check if already enrolled
+        if Enrollment.objects.filter(user=request.user, course=course).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'You are already enrolled in this course.'
+            })
+        
+        # Create enrollment
+        Enrollment.objects.create(
+            user=request.user,
+            course=course,
+            progress=0
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Successfully enrolled in the course.',
+            'course_title': course.title
+        })
+        
+    except Course.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Course not found.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error enrolling in course: {str(e)}'
+        })
+
+@login_required
+def course_form(request, course_id=None):
+    # Check if user has permission to manage courses
+    if not request.user.userprofile.role in ['admin', 'manager']:
+        messages.error(request, "Access denied. You don't have permission to manage courses.")
+        return redirect('home')
+
+    course = None
+    if course_id:
+        course = get_object_or_404(Course, id=course_id)
+        # Check if user has permission to edit this course
+        if not (request.user.userprofile.role == 'admin' or course.uploaded_by == request.user):
+            messages.error(request, "Access denied. You don't have permission to edit this course.")
+            return redirect('home')
+
+    if request.method == 'POST':
+        data = request.POST
+        files = request.FILES
+
+        try:
+            if course:
+                # Update existing course
+                course.title = data.get('title')
+                course.difficulty_level = data.get('difficulty_level')
+                course.category = data.get('category')
+                course.tags = data.get('tags')
+                course.description = data.get('description')
+                course.course_language = data.get('course_language')
+                course.duration = data.get('duration')
+                course.due_date = data.get('due_date')
+                course.is_active = data.get('is_active') == 'on'
+                course.enable_comments = data.get('enable_comments') == 'on'
+                course.student_limit = data.get('student_limit') or None
+                
+                if 'image' in files:
+                    course.image = files['image']
+                
+                course.save()
+                messages.success(request, 'Course updated successfully!')
+            else:
+                # Create new course
+                course = Course.objects.create(
+                    title=data.get('title'),
+                    difficulty_level=data.get('difficulty_level'),
+                    category=data.get('category'),
+                    tags=data.get('tags'),
+                    description=data.get('description'),
+                    course_language=data.get('course_language'),
+                    duration=data.get('duration'),
+                    due_date=data.get('due_date'),
+                    is_active=data.get('is_active') == 'on',
+                    enable_comments=data.get('enable_comments') == 'on',
+                    student_limit=data.get('student_limit') or None,
+                    uploaded_by=request.user,
+                    image=files.get('image')
+                )
+                messages.success(request, 'Course created successfully!')
+
+            return redirect('view_course', course_id=course.id)
+
+        except Exception as e:
+            messages.error(request, f'Error saving course: {str(e)}')
+            return render(request, 'course_form.html', {'course': course})
+
+    return render(request, 'course_form.html', {'course': course})
+
+@login_required
+def lesson_builder(request, section_id, lesson_id=None):
+    section = get_object_or_404(CourseSection, id=section_id)
+    course = section.course
+
+    # Check if user has permission to manage this course's lessons
+    if not (request.user.userprofile.role == 'admin' or course.uploaded_by == request.user):
+        messages.error(request, "Access denied. You don't have permission to manage lessons for this course.")
+        return redirect('view_course', course_id=course.id)
+
+    lesson = None
+    if lesson_id:
+        lesson = get_object_or_404(Lesson, id=lesson_id, section=section)
+
+    return render(request, 'lesson_builder.html', {
+        'section': section,
+        'lesson': lesson,
+        'course': course
+    })
+
+@login_required
+@require_POST
+def save_lesson(request, section_id):
+    section = get_object_or_404(CourseSection, id=section_id)
+    course = section.course
+
+    # Check permissions
+    if not (request.user.userprofile.role == 'admin' or course.uploaded_by == request.user):
+        return JsonResponse({
+            'success': False,
+            'message': "Access denied. You don't have permission to manage lessons for this course."
+        })
+
+    try:
+        # Get lesson data
+        data = request.POST
+        files = request.FILES
+        blocks_data = json.loads(data.get('blocks', '[]'))
+
+        # Create or update lesson
+        lesson_id = data.get('lesson_id')
+        if lesson_id:
+            lesson = get_object_or_404(Lesson, id=lesson_id, section=section)
+            lesson.title = data.get('title')
+            lesson.duration = data.get('duration')
+            lesson.save()
+        else:
+            lesson = Lesson.objects.create(
+                section=section,
+                title=data.get('title'),
+                duration=data.get('duration')
+            )
+
+        # Process content blocks
+        for index, block_data in enumerate(blocks_data):
+            content_type = block_data['type']
+            content = block_data.get('content', '')
+            file_key = f'block_{index}_file'
+            
+            # Create content block
+            block = lesson.content_blocks.create(
+                content_type=content_type,
+                content=content,
+                order=index
+            )
+            
+            # Handle file uploads
+            if file_key in files:
+                block.file = files[file_key]
+                block.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Lesson saved successfully!',
+            'redirect_url': request.build_absolute_uri(reverse('view_course', args=[course.id]))
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error saving lesson: {str(e)}'
+        })
+
+@login_required
+def courses_list(request):
+    user_profile = request.user.userprofile
+    search_query = request.GET.get('search', '')
+    
+    # Get courses based on user role and visibility
+    if user_profile.role == 'admin':
+        courses = Course.objects.all()
+    elif user_profile.role == 'manager':
+        courses = Course.objects.filter(
+            Q(uploaded_by=request.user) |  # Own courses
+            Q(uploaded_by__userprofile__role='admin')  # Admin courses
+        )
+    else:  # Employee
+        courses = Course.objects.filter(
+            Q(is_active=True) &
+            (Q(uploaded_by__userprofile__role='admin') |  # Admin courses
+             Q(uploaded_by__userprofile__role='manager'))  # Manager courses
+        )
+    
+    # Apply search filter
+    if search_query:
+        courses = courses.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(tags__icontains=search_query)
+        )
+    
+    # Order courses
+    courses = courses.order_by('-created_at')
+    
+    # Paginate results
+    paginator = Paginator(courses, 12)  # Show 12 courses per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'courses_list.html', {
+        'courses': page_obj,
+        'search_query': search_query,
+        'user_profile': user_profile
+    })    

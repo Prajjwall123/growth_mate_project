@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'employee/base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="min-h-screen bg-gray-100">
-    {% include 'includes/employee_sidebar.html' %}
+    {% include 'includes/sidebar.html' %}
 
     <!-- Main Content -->
     <main class="ml-64 p-8">
@@ -14,12 +14,14 @@
                 <p class="text-gray-600">Continue your learning journey.</p>
             </div>
             <div class="flex space-x-4">
+                {% if active_courses > 0 %}
                 <button class="flex items-center bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path>
                     </svg>
                     Resume Course
                 </button>
+                {% endif %}
                 <button class="flex items-center bg-green-100 text-green-600 px-4 py-2 rounded-lg hover:bg-green-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -42,9 +44,9 @@
                 <h3 class="text-lg font-medium text-gray-700">Overall Progress</h3>
                 <div class="mt-4">
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-orange-500 h-2.5 rounded-full" style="width: 40%"></div>
+                        <div class="bg-orange-500 h-2.5 rounded-full" style="width: {{ overall_progress }}%"></div>
                     </div>
-                    <p class="text-2xl font-bold text-gray-900 mt-2">40%</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-2">{{ overall_progress }}%</p>
                 </div>
                 <p class="text-sm text-blue-600 mt-2">Above average</p>
             </div>
@@ -52,22 +54,22 @@
             <!-- Total Courses -->
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-lg font-medium text-gray-700">Total Courses</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-2">75</p>
-                <p class="text-sm text-green-600 mt-2">+13 new courses added</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ total_courses }}</p>
+                <p class="text-sm text-green-600 mt-2">+{{ active_courses }} active courses</p>
             </div>
 
             <!-- Active Courses -->
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-lg font-medium text-gray-700">Active Courses</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-2">12</p>
-                <p class="text-sm text-green-600 mt-2">+10 recently added</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ active_courses }}</p>
+                <p class="text-sm text-green-600 mt-2">Currently enrolled</p>
             </div>
 
             <!-- Learning Time -->
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-lg font-medium text-gray-700">Learning Time</h3>
-                <p class="text-2xl font-bold text-gray-900 mt-2">32hrs</p>
-                <p class="text-sm text-green-600 mt-2">+4hrs from last week</p>
+                <p class="text-2xl font-bold text-gray-900 mt-2">{{ learning_time }}hrs</p>
+                <p class="text-sm text-green-600 mt-2">Total course duration</p>
             </div>
         </div>
 
@@ -105,24 +107,19 @@
 
             <!-- Course Progress Bars -->
             <div class="space-y-4">
+                {% for course in course_progress %}
                 <div>
                     <div class="flex justify-between items-center mb-2">
-                        <p class="text-sm font-medium text-gray-700">Customer Service</p>
-                        <p class="text-sm text-gray-500">70%</p>
+                        <p class="text-sm font-medium text-gray-700">{{ course.title }}</p>
+                        <p class="text-sm text-gray-500">{{ course.progress }}%</p>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-orange-500 h-2.5 rounded-full" style="width: 70%"></div>
+                        <div class="bg-orange-500 h-2.5 rounded-full" style="width: {{ course.progress }}%"></div>
                     </div>
                 </div>
-                <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <p class="text-sm font-medium text-gray-700">Product Knowledge</p>
-                        <p class="text-sm text-gray-500">40%</p>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-orange-500 h-2.5 rounded-full" style="width: 40%"></div>
-                    </div>
-                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center">No courses enrolled yet.</p>
+                {% endfor %}
             </div>
         </div>
     </main>

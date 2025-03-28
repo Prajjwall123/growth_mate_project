@@ -29,7 +29,7 @@
                             {% if course.is_active %}Active{% else %}Inactive{% endif %}
                         </span>
                     </div>
-                    <p class="text-sm text-gray-600 mb-4">{{ course.about_this_course|truncatechars:100 }}</p>
+                    <p class="text-sm text-gray-600 mb-4">{{ course.description|truncatechars:100 }}</p>
                     <div class="flex items-center justify-between text-sm text-gray-500">
                         <span>Duration: {{ course.duration }}</span>
                         <span>Due: {{ course.due_date|date:"M d, Y" }}</span>
@@ -82,7 +82,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">About This Course</label>
-                    <textarea name="about_this_course" required rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"></textarea>
+                    <textarea name="description" required rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500"></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">

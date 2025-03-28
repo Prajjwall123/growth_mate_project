@@ -6,227 +6,297 @@
     <!-- Main Content -->
     <main class="ml-64 p-8">
         <!-- Header Section -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-800">Courses</h1>
-        </div>
-
-        <!-- Header with Search and Add Course Button -->
         <div class="flex justify-between items-center mb-8">
-            <div class="relative w-96">
-                <input type="text" placeholder="Search ..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Courses</h1>
+                <p class="text-gray-600">Manage your courses and track student progress</p>
             </div>
-            <button class="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+            <button onclick="openAddCourseModal()" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                Add/Edit Course
+                Add New Course
             </button>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-4 gap-6 mb-8">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Total Courses -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700">Total Courses</h3>
-                        <p class="text-3xl font-bold text-gray-900">56</p>
+            <div class="bg-white rounded-lg p-6">
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium text-gray-500">Total Courses</h3>
+                        <span class="p-2 bg-blue-100 rounded-full">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                        </span>
                     </div>
-                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-green-500 text-sm">12% increase</span>
-                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
-                        <polyline points="0,16 16,8 32,20 48,12 64,16" 
-                                fill="none" 
-                                stroke="#22c55e" 
-                                stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Archive Courses -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700">Archive Courses</h3>
-                        <p class="text-3xl font-bold text-gray-900">14</p>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-2xl font-bold">{{ total_courses }}</span>
                     </div>
-                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-gray-500 text-sm">No change</span>
-                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
-                        <line x1="0" y1="16" x2="64" y2="16" 
-                              stroke="#6b7280" 
-                              stroke-width="2"/>
-                    </svg>
                 </div>
             </div>
 
-            <!-- Draft/Pending -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700">Draft/Pending</h3>
-                        <p class="text-3xl font-bold text-gray-900">33</p>
-                    </div>
-                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-red-500 text-sm">5% decrease</span>
-                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
-                        <polyline points="0,16 16,24 32,12 48,20 64,16" 
-                                fill="none" 
-                                stroke="#ef4444" 
-                                stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Enrollments -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-700">Enrollments</h3>
-                        <p class="text-3xl font-bold text-gray-900">22</p>
-                    </div>
-                    <a href="#" class="text-orange-500 hover:text-orange-600">View</a>
-                </div>
-                <div class="flex items-center">
-                    <span class="text-green-500 text-sm">8% increase</span>
-                    <svg class="w-16 h-8 ml-2" viewBox="0 0 64 32">
-                        <polyline points="0,16 16,8 32,20 48,12 64,16" 
-                                fill="none" 
-                                stroke="#22c55e" 
-                                stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Course Details Section -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-800">Course Details</h2>
-                <a href="#" class="text-orange-500 hover:text-orange-600">View All</a>
-            </div>
-
-            <!-- Table Controls -->
-            <div class="flex gap-4 mb-4">
-                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                    Filter
-                </button>
-                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                    Export
-                </button>
-                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                    Print
-                </button>
-                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                    Sort
-                </button>
-                <button class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-                    Columns
-                </button>
-            </div>
-
-            <!-- Course Table -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Course Title</th>
-                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Instructor</th>
-                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Category</th>
-                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Enrollment Count</th>
-                            <th class="text-left py-4 px-4 text-sm font-medium text-gray-500">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Business Fundamentals</td>
-                            <td class="py-4 px-4">John Karki</td>
-                            <td class="py-4 px-4">Business</td>
-                            <td class="py-4 px-4">89</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Metals Fundamentals</td>
-                            <td class="py-4 px-4">Subhasis Regmi</td>
-                            <td class="py-4 px-4">Commodities</td>
-                            <td class="py-4 px-4">91</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Plastic Reuse Tech</td>
-                            <td class="py-4 px-4">Peter Khadka</td>
-                            <td class="py-4 px-4">Technology</td>
-                            <td class="py-4 px-4">111</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-gray-600 bg-gray-100 rounded-full">Archived</span></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Digital Marketing</td>
-                            <td class="py-4 px-4">Sarah Johnson</td>
-                            <td class="py-4 px-4">Marketing</td>
-                            <td class="py-4 px-4">156</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Data Science Basics</td>
-                            <td class="py-4 px-4">Michael Chen</td>
-                            <td class="py-4 px-4">Technology</td>
-                            <td class="py-4 px-4">203</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
-                        </tr>
-                        <tr class="border-b">
-                            <td class="py-4 px-4">Financial Planning</td>
-                            <td class="py-4 px-4">Emma Wilson</td>
-                            <td class="py-4 px-4">Finance</td>
-                            <td class="py-4 px-4">167</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-yellow-600 bg-yellow-100 rounded-full">Draft</span></td>
-                        </tr>
-                        <tr>
-                            <td class="py-4 px-4">Web Development</td>
-                            <td class="py-4 px-4">David Kim</td>
-                            <td class="py-4 px-4">Technology</td>
-                            <td class="py-4 px-4">245</td>
-                            <td class="py-4 px-4"><span class="px-2 py-1 text-sm text-green-600 bg-green-100 rounded-full">Live</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Bottom Stats Section -->
-        <div class="grid grid-cols-2 gap-6 mt-8">
             <!-- Active Courses -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Active Courses</h3>
-                <div class="flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-orange-500">42</div>
-                        <div class="text-sm text-gray-500 mt-2">Total Active Courses</div>
+            <div class="bg-white rounded-lg p-6">
+                <div class="flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium text-gray-500">Active Courses</h3>
+                        <span class="p-2 bg-green-100 rounded-full">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Course Hours -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Course Hours</h3>
-                <div class="flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="text-4xl font-bold text-orange-500">320</div>
-                        <div class="text-sm text-gray-500 mt-2">Total Course Hours</div>
+                    <div class="flex items-baseline mt-2">
+                        <span class="text-2xl font-bold">{{ active_courses }}</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white rounded-lg p-6 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div class="relative w-full md:w-96">
+                    <input type="text" 
+                           placeholder="Search courses..." 
+                           value="{{ search_query }}"
+                           class="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border rounded-lg focus:outline-none focus:border-blue-400"
+                           onchange="updateSearch(this.value)">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollments</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for stat in courses %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <img class="h-10 w-10 rounded-full object-cover" src="{{ stat.course.image.url }}" alt="{{ stat.course.title }}">
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ stat.course.title }}</div>
+                                    <div class="text-sm text-gray-500">{{ stat.course.description|truncatewords:10 }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stat.course.duration }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stat.course.due_date|date:"M d, Y" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ stat.total_enrollments }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-32 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-orange-500 h-2 rounded-full" style="width: {{ stat.avg_progress }}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-900">{{ stat.avg_progress }}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'edit_course' stat.course.id %}" class="text-blue-600 hover:text-blue-900 mr-4">Edit</a>
+                            <a href="{% url 'view_course' stat.course.id %}" class="text-green-600 hover:text-green-900">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            No courses found. Create your first course to get started!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if courses.has_other_pages %}
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if courses.has_previous %}
+                <a href="?page={{ courses.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+                {% if courses.has_next %}
+                <a href="?page={{ courses.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing
+                        <span class="font-medium">{{ courses.start_index }}</span>
+                        to
+                        <span class="font-medium">{{ courses.end_index }}</span>
+                        of
+                        <span class="font-medium">{{ courses.paginator.count }}</span>
+                        results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if courses.has_previous %}
+                        <a href="?page={{ courses.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+
+                        {% for num in courses.paginator.page_range %}
+                            {% if courses.number == num %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-orange-500 bg-orange-50 text-sm font-medium text-orange-600">
+                                {{ num }}
+                            </span>
+                            {% elif num > courses.number|add:'-3' and num < courses.number|add:'3' %}
+                            <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                {{ num }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if courses.has_next %}
+                        <a href="?page={{ courses.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </main>
 </div>
+
+<!-- Add Course Modal -->
+<div id="addCourseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Course</h3>
+            <form id="addCourseForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="title">
+                        Course Title
+                    </label>
+                    <input type="text" id="title" name="title" required
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="duration">
+                        Duration (e.g., "2 hours")
+                    </label>
+                    <input type="text" id="duration" name="duration" required
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
+                        Due Date
+                    </label>
+                    <input type="date" id="due_date" name="due_date" required
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="description">Course Description</label>
+                    <textarea id="description" name="description" required
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        rows="3"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="image">
+                        Course Image
+                    </label>
+                    <input type="file" id="image" name="image" accept="image/*"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddCourseModal()"
+                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
+                        Create Course
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAddCourseModal() {
+    document.getElementById('addCourseModal').classList.remove('hidden');
+}
+
+function closeAddCourseModal() {
+    document.getElementById('addCourseModal').classList.add('hidden');
+}
+
+function updateSearch(query) {
+    window.location.href = `?search=${encodeURIComponent(query)}`;
+}
+
+document.getElementById('addCourseForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "add_course" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the course.');
+    });
+});
+</script>
 {% endblock %} 

@@ -45,13 +45,23 @@ class UserProfile(models.Model):
         return f"{self.user.first_name} {self.user.last_name} - {self.role}"
 
 class Course(models.Model):
-    image = models.ImageField(upload_to='static/course_images/', blank=True, default='static/assets/images/default_course.png')  
     title = models.CharField(max_length=255)
-    duration = models.CharField(max_length=50) 
-    due_date = models.DateField()
-    about_this_course = models.TextField()
+    image = models.ImageField(upload_to='static/course_images/', blank=True, default='static/assets/images/default_course.png')
+    difficulty_level = models.CharField(max_length=50, choices=[
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced')
+    ], default='beginner')
+    category = models.CharField(max_length=100, blank=True, null=True, default='General')
+    tags = models.CharField(max_length=255, blank=True, help_text='Comma-separated tags')
+    description = models.TextField(blank=True, null=True)
+    course_language = models.CharField(max_length=50, default='English')
+    duration = models.CharField(max_length=50, default='1 hour')
+    due_date = models.DateField(null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
+    enable_comments = models.BooleanField(default=True)
+    student_limit = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -66,6 +76,59 @@ class Course(models.Model):
     def total_duration(self):
         return sum(lesson.duration for lesson in self.lesson_set.all())
 
+    @property
+    def is_admin_course(self):
+        return self.uploaded_by.userprofile.role == 'admin'
+
+    def is_visible_to(self, user):
+        if not user.is_authenticated:
+            return False
+        uploader_role = self.uploaded_by.userprofile.role
+        user_role = user.userprofile.role
+        
+        if uploader_role == 'admin':
+            return True
+        elif uploader_role == 'manager':
+            return user_role in ['manager', 'employee']
+        return False
+
+class CourseSection(models.Model):
+    course = models.ForeignKey(Course, related_name='sections', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+class Lesson(models.Model):
+    CONTENT_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('file', 'File'),
+        ('pdf', 'PDF')
+    ]
+
+    section = models.ForeignKey(CourseSection, related_name='lessons', on_delete=models.CASCADE, null=True, blank=True)
+    title = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPES, default='text')
+    content = models.TextField()
+    file = models.FileField(upload_to='static/lesson_files/', null=True, blank=True)
+    duration = models.IntegerField(help_text='Duration in minutes', default=0)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.section.course.title} - {self.section.title} - {self.title}" if self.section else self.title
 
 class CourseContent(models.Model):
     course = models.ForeignKey(Course, related_name="contents", on_delete=models.CASCADE)
@@ -101,19 +164,3 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.course.title}"
-
-
-class Lesson(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    duration = models.IntegerField(help_text='Duration in minutes')
-    order = models.IntegerField(default=0)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['order', 'created_at']
-
-    def __str__(self):
-        return f"{self.course.title} - {self.title}"

@@ -14,22 +14,28 @@ urlpatterns = [
     path('resend-otp/', views.resend_otp, name='resend_otp'),
     path('select-role/', views.select_role, name='select_role'),
 
-    # Manager Dashboard and Management Routes
-    path('manager/dashboard/', views.manager_dashboard, name='manager_dashboard'),
-    path('manager/users/', views.users_view, name='manager_users'),
-    path('manager/courses/', views.courses_view, name='manager_courses'),
-    path('manager/courses/add/', views.add_course, name='add_course'),
-    path('manager/courses/<int:course_id>/edit/', views.edit_course, name='edit_course'),
-    path('manager/courses/<int:course_id>/', views.view_course, name='view_course'),
-    path('manager/lessons/add/', views.add_lesson, name='add_lesson'),
+    # Course Management Routes
+    path('courses/', views.courses_list, name='courses_list'),
+    path('courses/new/', views.course_form, name='create_course'),
+    path('courses/<int:course_id>/edit/', views.course_form, name='edit_course'),
+    path('courses/<int:course_id>/view/', views.view_course, name='view_course'),
+    
+    # Lesson Management Routes
+    path('sections/<int:section_id>/lessons/new/', views.lesson_builder, name='create_lesson'),
+    path('sections/<int:section_id>/lessons/<int:lesson_id>/edit/', views.lesson_builder, name='edit_lesson'),
+    path('sections/<int:section_id>/lessons/save/', views.save_lesson, name='save_lesson'),
 
     # Profile Settings Route
     path('profile/settings/', views.profile_settings, name='profile_settings'),
 
-    # Employee Dashboard Route
+    # Employee Routes
     path('employee/dashboard/', views.employee_dashboard, name='employee_dashboard'),
-    path('employee/my-courses/', views.my_courses, name='my_courses'),
-    path('employee/courses/<int:course_id>/', views.course_details, name='course_details'),
+    path('employee/courses/', views.my_courses, name='my_courses'),
+    path('employee/courses/<int:course_id>/enroll/', views.enroll_course, name='enroll_course'),
+
+    # Manager Routes
+    path('manager/dashboard/', views.manager_dashboard, name='manager_dashboard'),
+    path('manager/users/', views.users_view, name='manager_users'),
 ]
 
 # Serve media files during development
