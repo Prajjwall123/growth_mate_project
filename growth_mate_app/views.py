@@ -16,7 +16,7 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, F
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password
@@ -209,17 +209,73 @@ def manager_dashboard(request):
 
 @login_required
 def my_courses(request):
-    user_profile = get_object_or_404(UserProfile, user=request.user)
+    # Placeholder data for in-progress courses
+    in_progress_courses = [
+        {
+            'title': 'Customer Service Excellence',
+            'duration': '40 mins',
+            'due_date': 'Feb 20, 2025',
+            'progress': 70,
+            'image': 'https://picsum.photos/800/600?random=1'
+        },
+        {
+            'title': 'Products Knowledge',
+            'duration': '3hrs',
+            'due_date': 'Jan 30, 2025',
+            'progress': 45,
+            'image': 'https://picsum.photos/800/600?random=2'
+        },
+        {
+            'title': 'Communication Skills',
+            'duration': '2hrs',
+            'due_date': 'Mar 15, 2025',
+            'progress': 30,
+            'image': 'https://picsum.photos/800/600?random=3'
+        },
+        {
+            'title': 'Leadership Training',
+            'duration': '5hrs',
+            'due_date': 'Apr 5, 2025',
+            'progress': 15,
+            'image': 'https://picsum.photos/800/600?random=4'
+        }
+    ]
     
-    if user_profile.role == 'manager':
-        courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
-    else:  # employee
-        courses = Course.objects.filter(enrolled_users=request.user).order_by('-created_at')
+    # Placeholder data for trending courses
+    trending_courses = [
+        {
+            'title': 'Data Science Fundamentals',
+            'rating': 4.5,
+            'reviews': '2.3k',
+            'image': 'https://picsum.photos/800/600?random=5'
+        },
+        {
+            'title': 'Advanced Digital Marketing',
+            'rating': 4.0,
+            'reviews': '1.8k',
+            'image': 'https://picsum.photos/800/600?random=6'
+        },
+        {
+            'title': 'UI/UX Design Masterclass',
+            'rating': 5.0,
+            'reviews': '956',
+            'image': 'https://picsum.photos/800/600?random=7'
+        },
+        {
+            'title': 'Agile Project Management',
+            'rating': 4.2,
+            'reviews': '1.2k',
+            'image': 'https://picsum.photos/800/600?random=8'
+        }
+    ]
     
-    return render(request, 'my_courses.html', {
-        'courses': courses,
-        'user_profile': user_profile
-    })
+    context = {
+        'in_progress_courses': in_progress_courses,
+        'trending_courses': trending_courses,
+        'user_profile': request.user
+    }
+    
+    return render(request, 'employee/my_courses.html', context)
 
 @login_required
 @require_POST
