@@ -547,4 +547,41 @@ def employee_dashboard(request):
     context = {
         'user_profile': user_profile,
     }
-    return render(request, 'employee/dashboard.html', context)    
+    return render(request, 'employee/dashboard.html', context)
+
+@login_required
+def course_details(request, course_id=None):
+    # For now, using static data
+    course_data = {
+        'title': 'Customer Service',
+        'duration': '3hrs',
+        'due_date': 'Jan 30, 2025',
+        'progress': 70,
+        'image': 'https://picsum.photos/1200/400?random=1',
+        'about': 'This course provides an in-depth overview of customer service skills and best practices. You\'ll learn how to effectively communicate with customers, handle difficult situations, and provide exceptional service that builds long-term relationships. The course combines theoretical knowledge with practical examples and real-world scenarios.',
+        'lessons': [
+            {
+                'number': 1,
+                'title': 'Introduction to Customer Service',
+                'duration': '45 mins'
+            },
+            {
+                'number': 2,
+                'title': 'Communication Skills',
+                'duration': '60 mins'
+            },
+            {
+                'number': 3,
+                'title': 'Handling Customer Complaints',
+                'duration': '75 mins'
+            }
+        ],
+        'stats': {
+            'total_lessons': 3,
+            'completed_lessons': 2,
+            'time_remaining': '75 mins',
+            'last_accessed': '2 days ago'
+        }
+    }
+    
+    return render(request, 'employee/course_details.html', {'course': course_data})    

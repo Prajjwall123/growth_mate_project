@@ -1,0 +1,113 @@
+{% extends 'employee/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-8 py-8 mt-20">
+    <!-- Back Navigation -->
+    <div class="mb-8">
+        <a href="{% url 'my_courses' %}" class="inline-flex items-center text-gray-600 hover:text-gray-800">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            <span>Back to Courses</span>
+        </a>
+    </div>
+
+    <!-- Course Header -->
+    <div class="relative mb-8">
+        <img src="{{ course.image }}" alt="{{ course.title }}" class="w-full h-64 object-cover rounded-xl">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl"></div>
+        <div class="absolute bottom-0 left-0 p-8">
+            <h1 class="text-3xl font-bold text-white mb-2">{{ course.title }}</h1>
+            <div class="flex items-center text-white/80 space-x-4">
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ course.duration }}
+                </span>
+                <span class="flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Due: {{ course.due_date }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Content -->
+    <div class="grid grid-cols-3 gap-8">
+        <!-- Left Column - Course Details -->
+        <div class="col-span-2">
+            <!-- About Section -->
+            <div class="bg-white rounded-lg p-6 mb-8 shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">About This Course</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    {{ course.about }}
+                </p>
+            </div>
+
+            <!-- Lessons Section -->
+            <div class="bg-white rounded-lg p-6 shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Course Content</h2>
+                <div class="space-y-4">
+                    {% for lesson in course.lessons %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-lg font-medium text-gray-900">Lesson {{ lesson.number }}</span>
+                                <h3 class="text-gray-700">{{ lesson.title }}</h3>
+                            </div>
+                            <span class="text-sm text-gray-500">{{ lesson.duration }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Progress and Actions -->
+        <div class="col-span-1">
+            <!-- Progress Card -->
+            <div class="bg-white rounded-lg p-6 shadow-sm mb-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Your Progress</h3>
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>Overall Completion</span>
+                        <span>{{ course.progress }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: {{ course.progress }}%"></div>
+                    </div>
+                </div>
+                <button class="w-full py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors mb-4">
+                    Resume Course
+                </button>
+                <div class="text-center">
+                    <span class="text-sm text-gray-500">Last accessed: {{ course.stats.last_accessed }}</span>
+                </div>
+            </div>
+
+            <!-- Course Stats -->
+            <div class="bg-white rounded-lg p-6 shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Course Stats</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Total Lessons</span>
+                        <span class="font-medium text-gray-900">{{ course.stats.total_lessons }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Completed Lessons</span>
+                        <span class="font-medium text-gray-900">{{ course.stats.completed_lessons }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Time Remaining</span>
+                        <span class="font-medium text-gray-900">{{ course.stats.time_remaining }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

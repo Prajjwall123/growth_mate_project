@@ -29,6 +29,7 @@ urlpatterns = [
     # Employee Dashboard Route
     path('employee/dashboard/', views.employee_dashboard, name='employee_dashboard'),
     path('employee/my-courses/', views.my_courses, name='my_courses'),
+    path('employee/courses/<int:course_id>/', views.course_details, name='course_details'),
 ]
 
 # Serve media files during development
