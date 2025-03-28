@@ -1,3 +1,4 @@
+import string
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -209,11 +210,12 @@ def manager_dashboard(request):
 @login_required
 def my_courses(request):
     user_profile = get_object_or_404(UserProfile, user=request.user)
-    if user_profile.role != 'manager':
-        messages.error(request, 'Access denied. Managers only.')
-        return redirect('home')
     
-    courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
+    if user_profile.role == 'manager':
+        courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
+    else:  # employee
+        courses = Course.objects.filter(enrolled_users=request.user).order_by('-created_at')
+    
     return render(request, 'my_courses.html', {
         'courses': courses,
         'user_profile': user_profile
@@ -338,16 +340,33 @@ def profile_settings(request):
         request.user.save()
 
         # Update profile fields
-        user_profile.professional_headline = request.POST.get('professional_headline', user_profile.professional_headline)
+        if user_profile.role == 'manager':
+            user_profile.professional_headline = request.POST.get('professional_headline', user_profile.professional_headline)
         user_profile.bio = request.POST.get('bio', user_profile.bio)
         user_profile.phone = request.POST.get('phone', user_profile.phone)
         user_profile.save()
 
-        # Verify password if provided (optional security check)
+        # Handle password change
         current_password = request.POST.get('current_password')
         if current_password:
             if request.user.check_password(current_password):
-                messages.success(request, 'Profile updated successfully.')
+                # For employees, handle complete password change
+                if user_profile.role == 'employee':
+                    new_password = request.POST.get('new_password')
+                    confirm_password = request.POST.get('confirm_password')
+                    if new_password and confirm_password:
+                        if new_password == confirm_password:
+                            request.user.set_password(new_password)
+                            request.user.save()
+                            messages.success(request, 'Profile and password updated successfully.')
+                            # Re-authenticate the user to prevent logout
+                            update_session_auth_hash(request, request.user)
+                        else:
+                            messages.error(request, 'New passwords do not match.')
+                    elif new_password or confirm_password:
+                        messages.error(request, 'Please provide both new password and confirmation.')
+                else:
+                    messages.success(request, 'Profile updated successfully.')
             else:
                 messages.error(request, 'Current password is incorrect.')
         else:
@@ -358,7 +377,12 @@ def profile_settings(request):
     context = {
         'user_profile': user_profile,
     }
-    return render(request, 'manager/profile_settings.html', context)
+    
+    # Use different templates based on user role
+    if user_profile.role == 'manager':
+        return render(request, 'manager/profile_settings.html', context)
+    else:
+        return render(request, 'employee/profile_settings.html', context)
 
 @login_required
 def users_view(request):
