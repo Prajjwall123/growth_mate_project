@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,13 +12,33 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
+
 <body class="bg-gray-50">
     {% if messages %}
     <div class="fixed top-4 right-4 z-50">
         {% for message in messages %}
-        <div class="{% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} px-4 py-3 rounded-lg shadow-md mb-2">
+        <div
+            class="{% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} px-4 py-3 rounded-lg shadow-md mb-2">
             {{ message }}
         </div>
         {% endfor %}
@@ -26,22 +47,27 @@
 
     <div class="flex h-screen bg-gray-50">
         {% include 'includes/sidebar.html' %}
-        
+
         <div class="flex-1 overflow-auto">
             {% block content %}
             {% endblock %}
         </div>
     </div>
 
+    <!-- Include Chat Modal -->
+    {% include 'includes/chat_modal.html' %}
+
+    <!-- Scripts -->
+    <script src="{% static 'js/chat.js' %}"></script>
     <script>
         // Auto-hide messages after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
                 const messages = document.querySelectorAll('.fixed.top-4.right-4 [class*="bg-"][class*="-100"]');
-                messages.forEach(function(message) {
+                messages.forEach(function (message) {
                     message.style.transition = 'opacity 0.5s ease-in-out';
                     message.style.opacity = '0';
-                    setTimeout(function() {
+                    setTimeout(function () {
                         message.remove();
                     }, 500);
                 });
@@ -49,4 +75,5 @@
         });
     </script>
 </body>
-</html> 
+
+</html>
