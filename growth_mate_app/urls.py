@@ -30,6 +30,10 @@ urlpatterns = [
     path('employee/dashboard/', views.employee_dashboard, name='employee_dashboard'),
     path('employee/my-courses/', views.my_courses, name='my_courses'),
     path('employee/courses/<int:course_id>/', views.course_details, name='course_details'),
+
+    #chatbot route
+    path('chat/', views.chat_view, name='chat'),
+    path('send-message/', views.send_message, name='send_message'),
 ]
 
 # Serve media files during development
