@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -190,69 +190,74 @@ def manager_dashboard(request):
     today = timezone.now().date()
     last_month = today - timezone.timedelta(days=30)
 
-    # Get or create today's stats
+    # Get or create today's statistics
     today_stats, created = DashboardStats.objects.get_or_create(date=today)
     last_month_stats = DashboardStats.objects.filter(date=last_month).first()
 
-    # Calculate current stats
+    # Calculate total users (employees only)
     total_users = User.objects.filter(userprofile__role='employee').count()
-    total_courses = Course.objects.filter(uploaded_by=request.user).count()
-    active_courses = Course.objects.filter(uploaded_by=request.user, is_active=True).count()
+    active_users = User.objects.filter(userprofile__role='employee', is_active=True).count()
+    inactive_users = total_users - active_users
+
+    # Calculate course statistics
+    total_courses = Course.objects.filter(instructor=request.user).count()
+    active_courses = Course.objects.filter(instructor=request.user, is_active=True).count()
     
     # Calculate course completion rate
-    all_courses = Course.objects.filter(uploaded_by=request.user)
-    total_enrollments = sum(course.enrollment_set.count() for course in all_courses)
-    completed_enrollments = sum(course.enrollment_set.filter(completed=True).count() for course in all_courses)
-    course_completion_rate = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+    enrollments = Enrollment.objects.filter(course__instructor=request.user)
+    total_enrollments = enrollments.count()
+    completed_enrollments = enrollments.filter(completed=True).count()
+    course_completion = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
 
     # Calculate growth rates
     if last_month_stats:
-        user_growth = ((total_users - last_month_stats.total_users) / last_month_stats.total_users * 100) if last_month_stats.total_users > 0 else 0
-        course_growth = ((total_courses - last_month_stats.total_courses) / last_month_stats.total_courses * 100) if last_month_stats.total_courses > 0 else 0
-        completion_growth = course_completion_rate - last_month_stats.course_completion_rate
+        user_growth = round(((total_users - last_month_stats.total_users) / last_month_stats.total_users * 100) if last_month_stats.total_users > 0 else 0, 2)
+        course_growth = round(((total_courses - last_month_stats.total_courses) / last_month_stats.total_courses * 100) if last_month_stats.total_courses > 0 else 0, 2)
+        completion_growth = round((course_completion - last_month_stats.course_completion_rate), 2)
     else:
-        user_growth = course_growth = completion_growth = 0
+        user_growth = 0
+        course_growth = 0
+        completion_growth = 0
 
-    # Update today's stats
+    # Update today's statistics
     today_stats.total_users = total_users
     today_stats.total_courses = total_courses
     today_stats.active_courses = active_courses
-    today_stats.course_completion_rate = course_completion_rate
+    today_stats.course_completion_rate = course_completion
     today_stats.user_growth_rate = user_growth
     today_stats.course_growth_rate = course_growth
     today_stats.completion_growth_rate = completion_growth
     today_stats.save()
 
-    # Get top students
+    # Get top students based on progress
     top_students = StudentProgress.objects.filter(
-        course__uploaded_by=request.user
-    ).select_related('user').order_by('-progress_percentage')[:4]
+        course__instructor=request.user
+    ).select_related('user').order_by('-progress_percentage')[:5]
 
     # Get course completion data
-    course_completion = []
-    for course in all_courses:
-        course_completion.append({
+    courses = Course.objects.filter(instructor=request.user)
+    course_completion_data = []
+    for course in courses:
+        course_completion_data.append({
             'title': course.title,
-            'progress': course.completion_rate
+            'completion_rate': course.completion_rate
         })
 
     context = {
         'user_profile': user_profile,
-        'total_users': total_users,
-        'total_courses': total_courses,
-        'active_courses': active_courses,
-        'course_completion_rate': course_completion_rate,
-        'user_growth': round(user_growth, 1),
-        'course_growth': round(course_growth, 1),
-        'completion_growth': round(completion_growth, 1),
-        'top_students': [
-            {
-                'name': progress.user.get_full_name(),
-                'progress': progress.progress_percentage
-            }
-            for progress in top_students
-        ],
-        'course_completion': course_completion
+        'stats': {
+            'total_users': total_users,
+            'active_users': active_users,
+            'inactive_users': inactive_users,
+            'total_courses': total_courses,
+            'active_courses': active_courses,
+            'course_completion': course_completion,
+            'user_growth': user_growth,
+            'course_growth': course_growth,
+            'completion_growth': completion_growth
+        },
+        'top_students': top_students,
+        'course_completion_data': course_completion_data
     }
     
     return render(request, 'manager/dashboard.html', context)
@@ -636,19 +641,211 @@ def available_courses(request):
     })
 
 @login_required
-def course_form(request):
-    # Check if user is a manager
+def manager_courses(request):
+    # Check if the user is a manager
     try:
         user_profile = UserProfile.objects.get(user=request.user)
         if user_profile.role != 'manager':
-            messages.error(request, 'Access Denied: Manager privileges required.')
+            messages.error(request, "Access denied. Manager privileges required.")
             return redirect('home')
     except UserProfile.DoesNotExist:
-        messages.error(request, 'User profile not found.')
+        messages.error(request, "User profile not found.")
         return redirect('home')
+
+    # Get search query and filters
+    search_query = request.GET.get('search', '')
+    category_filter = request.GET.get('category', 'all')
+    status_filter = request.GET.get('status', 'all')
+    page = request.GET.get('page', 1)
+
+    # Base queryset for courses
+    courses = Course.objects.filter(instructor=request.user)
+
+    # Apply search filter
+    if search_query:
+        courses = courses.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Apply category filter
+    if category_filter != 'all':
+        courses = courses.filter(category_id=category_filter)
+
+    # Apply status filter
+    if status_filter == 'active':
+        courses = courses.filter(is_active=True)
+    elif status_filter == 'inactive':
+        courses = courses.filter(is_active=False)
+
+    # Calculate statistics
+    total_courses = Course.objects.filter(instructor=request.user).count()
+    active_courses = Course.objects.filter(instructor=request.user, is_active=True).count()
+    total_enrollments = Enrollment.objects.filter(course__instructor=request.user).count()
+    completed_enrollments = Enrollment.objects.filter(course__instructor=request.user, completed=True).count()
+    completion_rate = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+
+    # Get categories for filter
+    categories = CourseCategory.objects.all()
+
+    # Paginate the results
+    paginator = Paginator(courses, 10)  # Show 10 courses per page
+    try:
+        courses = paginator.page(page)
+    except PageNotAnInteger:
+        courses = paginator.page(1)
+    except EmptyPage:
+        courses = paginator.page(paginator.num_pages)
+
+    # Get additional course data
+    for course in courses:
+        # Get enrolled students count
+        course.enrolled_students = course.enrollments.count()
+        # Get completion rate
+        course.completion_rate = course.completion_rate
+        # Get active enrollments
+        course.active_enrollments = course.active_enrollments
+        # Get total revenue
+        course.total_revenue = course.enrollments.filter(completed=True).count() * course.price
+        # Get average rating
+        course.rating = course.rating
+        # Get total ratings
+        course.total_ratings = course.total_ratings
 
     context = {
         'user_profile': user_profile,
+        'courses': courses,
+        'categories': categories,
+        'stats': {
+            'total_courses': total_courses,
+            'active_courses': active_courses,
+            'total_enrollments': total_enrollments,
+            'completion_rate': completion_rate
+        },
+        'search_query': search_query,
+        'category_filter': category_filter,
+        'status_filter': status_filter,
+        'page_obj': courses,
     }
     
-    return render(request, 'course_form.html', context)    
+    return render(request, 'manager/courses.html', context)
+
+@login_required
+def course_form(request, course_id=None):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    # Get course instance if editing
+    course = None
+    if course_id:
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+
+    if request.method == 'POST':
+        # Handle form submission
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        category_id = request.POST.get('category')
+        duration = request.POST.get('duration')
+        level = request.POST.get('level')
+        prerequisites = request.POST.get('prerequisites')
+        objectives = request.POST.get('objectives')
+        target_audience = request.POST.get('target_audience')
+        is_active = request.POST.get('is_active') == 'on'
+        is_featured = request.POST.get('is_featured') == 'on'
+        certificate_available = request.POST.get('certificate_available') == 'on'
+        max_students = request.POST.get('max_students')
+        discount_price = request.POST.get('discount_price')
+        discount_end_date = request.POST.get('discount_end_date')
+
+        if course:
+            # Update existing course
+            course.title = title
+            course.description = description
+            course.price = price
+            course.category_id = category_id
+            course.duration = duration
+            course.level = level
+            course.prerequisites = prerequisites
+            course.objectives = objectives
+            course.target_audience = target_audience
+            course.is_active = is_active
+            course.is_featured = is_featured
+            course.certificate_available = certificate_available
+            course.max_students = max_students
+            if discount_price and discount_end_date:
+                course.discount_price = discount_price
+                course.discount_end_date = discount_end_date
+            course.save()
+            messages.success(request, 'Course updated successfully.')
+        else:
+            # Create new course
+            course = Course.objects.create(
+                title=title,
+                description=description,
+                price=price,
+                category_id=category_id,
+                duration=duration,
+                level=level,
+                prerequisites=prerequisites,
+                objectives=objectives,
+                target_audience=target_audience,
+                is_active=is_active,
+                is_featured=is_featured,
+                certificate_available=certificate_available,
+                max_students=max_students,
+                instructor=request.user
+            )
+            if discount_price and discount_end_date:
+                course.discount_price = discount_price
+                course.discount_end_date = discount_end_date
+                course.save()
+            messages.success(request, 'Course created successfully.')
+
+        return redirect('manager_courses')
+
+    # Get categories for the form
+    categories = CourseCategory.objects.all()
+    tags = CourseTag.objects.all()
+
+    context = {
+        'user_profile': user_profile,
+        'course': course,
+        'categories': categories,
+        'tags': tags,
+    }
+    
+    return render(request, 'manager/course_form.html', context)
+
+@login_required
+def delete_course(request, course_id):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    if request.method == 'POST':
+        course.delete()
+        messages.success(request, 'Course deleted successfully.')
+        return redirect('manager_courses')
+    
+    context = {
+        'user_profile': user_profile,
+        'course': course,
+    }
+    
+    return render(request, 'manager/delete_course.html', context)    

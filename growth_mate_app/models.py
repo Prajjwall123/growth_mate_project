@@ -68,38 +68,144 @@ class UserProfile(models.Model):
         super().delete(*args, **kwargs)
 
 class Course(models.Model):
-    image = models.ImageField(upload_to='static/course_images/', blank=True, default='static/assets/images/default_course.png')  
-    title = models.CharField(max_length=255)
-    duration = models.CharField(max_length=50) 
-    due_date = models.DateField()
-    about_this_course = models.TextField()
-    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_taught', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    thumbnail = models.ImageField(upload_to='course_thumbnails/', null=True, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_active = models.BooleanField(default=True)
+    category = models.ForeignKey('CourseCategory', on_delete=models.SET_NULL, null=True, blank=True)
+    tags = models.ManyToManyField('CourseTag', blank=True)
+    duration = models.DurationField(null=True, blank=True)
+    level = models.CharField(max_length=20, choices=[
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced')
+    ], default='beginner')
+    prerequisites = models.TextField(blank=True)
+    objectives = models.TextField(blank=True)
+    target_audience = models.TextField(blank=True)
+    certificate_available = models.BooleanField(default=False)
+    certificate_template = models.ImageField(upload_to='certificate_templates/', null=True, blank=True)
+    max_students = models.IntegerField(default=0)  # 0 for unlimited
+    is_featured = models.BooleanField(default=False)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    discount_end_date = models.DateTimeField(null=True, blank=True)
+    views_count = models.IntegerField(default=0)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    total_ratings = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title
 
     @property
-    def total_lessons(self):
-        return self.lesson_set.count()
-
-    @property
-    def total_duration(self):
-        return sum(lesson.duration for lesson in self.lesson_set.all())
-
-    @property
     def completion_rate(self):
-        total_enrollments = self.enrollment_set.count()
+        total_enrollments = self.enrollments.count()
         if total_enrollments == 0:
             return 0
-        completed_enrollments = self.enrollment_set.filter(completed=True).count()
+        completed_enrollments = self.enrollments.filter(completed=True).count()
         return round((completed_enrollments / total_enrollments) * 100, 2)
 
     @property
     def active_enrollments(self):
-        return self.enrollment_set.filter(completed=False).count()
+        return self.enrollments.filter(completed=False).count()
+
+    @property
+    def total_enrollments(self):
+        return self.enrollments.count()
+
+    @property
+    def is_discounted(self):
+        if self.discount_price and self.discount_end_date:
+            return timezone.now() <= self.discount_end_date
+        return False
+
+    @property
+    def current_price(self):
+        if self.is_discounted:
+            return self.discount_price
+        return self.price
+
+class CourseCategory(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, blank=True)  # For storing icon class names
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Course Categories"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class CourseTag(models.Model):
+    name = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+class CourseReview(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['course', 'user']
+
+    def __str__(self):
+        return f"{self.user.username}'s review for {self.course.title}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update course rating
+        course = self.course
+        reviews = course.reviews.all()
+        total_ratings = reviews.count()
+        avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+        course.rating = round(avg_rating, 2)
+        course.total_ratings = total_ratings
+        course.save()
+
+class CourseProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    completed_lessons = models.ManyToManyField('Lesson')
+    last_accessed = models.DateTimeField(auto_now=True)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['user', 'course']
+
+    def __str__(self):
+        return f"{self.user.username}'s progress in {self.course.title}"
+
+    @property
+    def progress_percentage(self):
+        total_lessons = self.course.lessons.count()
+        if total_lessons == 0:
+            return 0
+        completed_count = self.completed_lessons.count()
+        return round((completed_count / total_lessons) * 100, 2)
+
+    def save(self, *args, **kwargs):
+        if self.completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        super().save(*args, **kwargs)
 
 class CourseContent(models.Model):
     course = models.ForeignKey(Course, related_name="contents", on_delete=models.CASCADE)

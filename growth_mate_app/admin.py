@@ -1,31 +1,12 @@
 from django.contrib import admin
-from .models import UserProfile, Course, CourseContent, Section
-from django.db import models
+from .models import UserProfile, Course, CourseCategory, CourseTag, CourseReview, CourseProgress, CourseContent, Section, Enrollment, DashboardStats, StudentProgress, Lesson
 
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['get_user', 'role', 'get_first_name', 'get_last_name', 'get_email', 'get_phone_number']
-
-    def get_user(self, obj):
-        return obj.user.username
-    get_user.short_description = 'User'
-
-    def get_first_name(self, obj):
-        return obj.first_name
-    get_first_name.short_description = 'First Name'
-
-    def get_last_name(self, obj):
-        return obj.last_name
-    get_last_name.short_description = 'Last Name'
-
-    def get_email(self, obj):
-        return obj.email
-    get_email.short_description = 'Email'
-
-    def get_phone_number(self, obj):
-        return obj.phone_number
-    get_phone_number.short_description = 'Phone Number'
+    list_display = ('user', 'role', 'phone', 'country', 'city')
+    list_filter = ('role', 'country', 'city')
+    search_fields = ('user__username', 'user__email', 'phone', 'country', 'city')
 
 
 class SectionInline(admin.StackedInline):
@@ -43,20 +24,95 @@ class CourseContentInline(admin.StackedInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'duration', 'due_date', 'uploaded_by')
-    search_fields = ('title', 'uploaded_by__username')
-    list_filter = ('due_date',)
-    ordering = ('-due_date',)
+    list_display = ('title', 'instructor', 'category', 'price', 'is_active', 'created_at')
+    list_filter = ('is_active', 'category', 'level', 'created_at')
+    search_fields = ('title', 'description', 'instructor__username', 'instructor__email')
+    ordering = ('-created_at',)
+    filter_horizontal = ('tags',)
+    readonly_fields = ('rating', 'total_ratings', 'views_count')
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'description', 'instructor', 'category', 'tags', 'thumbnail')
+        }),
+        ('Course Details', {
+            'fields': ('price', 'duration', 'level', 'prerequisites', 'objectives', 'target_audience')
+        }),
+        ('Settings', {
+            'fields': ('is_active', 'is_featured', 'certificate_available', 'max_students')
+        }),
+        ('Discount', {
+            'fields': ('discount_price', 'discount_end_date')
+        }),
+        ('Statistics', {
+            'fields': ('rating', 'total_ratings', 'views_count'),
+            'classes': ('collapse',)
+        }),
+    )
     inlines = [CourseContentInline]  
+
+
+@admin.register(CourseCategory)
+class CourseCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name', 'description')
+
+
+@admin.register(CourseTag)
+class CourseTagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
+
+
+@admin.register(CourseReview)
+class CourseReviewAdmin(admin.ModelAdmin):
+    list_display = ('course', 'user', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('course__title', 'user__username', 'comment')
+
+
+@admin.register(CourseProgress)
+class CourseProgressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'completed', 'last_accessed')
+    list_filter = ('completed', 'last_accessed')
+    search_fields = ('user__username', 'course__title')
 
 
 @admin.register(CourseContent)
 class CourseContentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'description', 'course')
-    search_fields = ('title', 'course__title')
+    list_display = ('course', 'title', 'description')
+    search_fields = ('course__title', 'title', 'description')
 
 
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('heading', 'course_content')
-    search_fields = ('heading', 'course_content__title')
+    list_display = ('course_content', 'heading', 'description')
+    search_fields = ('course_content__title', 'heading', 'description')
+
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'enrolled_at', 'completed', 'completed_at')
+    list_filter = ('completed', 'enrolled_at', 'completed_at')
+    search_fields = ('user__username', 'course__title')
+
+
+@admin.register(DashboardStats)
+class DashboardStatsAdmin(admin.ModelAdmin):
+    list_display = ('date', 'total_users', 'total_courses', 'active_courses', 'course_completion_rate')
+    list_filter = ('date',)
+    search_fields = ('date',)
+
+
+@admin.register(StudentProgress)
+class StudentProgressAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'progress_percentage', 'last_updated')
+    list_filter = ('last_updated',)
+    search_fields = ('user__username', 'course__title')
+
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ('course', 'title', 'duration', 'order', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('course__title', 'title', 'content')
+    ordering = ('course', 'order')

@@ -17,9 +17,10 @@ urlpatterns = [
     # Manager Dashboard and Management Routes
     path('manager/dashboard/', views.manager_dashboard, name='manager_dashboard'),
     path('manager/users/', views.users_view, name='manager_users'),
-    path('manager/courses/', views.courses_view, name='manager_courses'),
-    path('manager/courses/add/', views.add_course, name='add_course'),
-    path('manager/courses/<int:course_id>/edit/', views.edit_course, name='edit_course'),
+    path('manager/courses/', views.manager_courses, name='manager_courses'),
+    path('manager/courses/add/', views.course_form, name='add_course'),
+    path('manager/courses/<int:course_id>/edit/', views.course_form, name='edit_course'),
+    path('manager/courses/<int:course_id>/delete/', views.delete_course, name='delete_course'),
     path('manager/courses/<int:course_id>/', views.view_course, name='view_course'),
     path('manager/lessons/add/', views.add_lesson, name='add_lesson'),
     path('manager/courses/form/', views.course_form, name='course_form'),
