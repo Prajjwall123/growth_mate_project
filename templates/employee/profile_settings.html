@@ -26,7 +26,7 @@
                     {% if user_profile.profile_pic %}
                         <img src="{{ user_profile.profile_pic.url }}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
                     {% else %}
-                        <img src="{% static 'assets/images/defaultuser.jpg' %}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
+                        <img src="{% static 'assets/images/default_profile.jpg' %}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
                     {% endif %}
                     <label for="profile_pic" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                         <span class="text-white text-sm"><i class="fas fa-camera mr-2"></i>Change</span>

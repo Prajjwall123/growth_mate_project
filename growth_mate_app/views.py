@@ -40,31 +40,21 @@ def signup(request):
             messages.error(request, "Email already registered.")
             return redirect("signup")
 
-        # Create user
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name
-        )
-
-        # Create user profile
-        UserProfile.objects.create(
-            user=user,
-            role=role,
-            email=email,
-            first_name=first_name,
-            last_name=last_name
-        )
-
-        # Generate and send OTP
+        # Generate OTP
         otp = ''.join(random.choices(string.digits, k=6))
-        user_profile = UserProfile.objects.get(user=user)
-        user_profile.otp = otp
-        user_profile.otp_created_at = timezone.now()
-        user_profile.save()
+        
+        # Store user data and OTP in session
+        request.session['temp_user_data'] = {
+            'email': email,
+            'password': password,
+            'first_name': first_name,
+            'last_name': last_name,
+            'role': role
+        }
+        request.session['otp'] = otp
+        request.session.set_expiry(300)  # 5 minutes expiry
 
+        # Send OTP email
         send_mail(
             'Verify your email',
             f'Your OTP is: {otp}',
@@ -125,24 +115,33 @@ def verify_otp(request):
     if request.method == "POST":
         email = request.session.get('temp_user_data', {}).get('email')
         entered_otp = request.POST.get("otp")
+        stored_otp = request.session.get('otp')
 
-        if not email or email not in otp_storage:
+        if not email or not stored_otp:
             messages.error(request, "Session expired. Please register again.")
             return redirect("signup")
 
-        if otp_storage[email] == entered_otp:
+        if stored_otp == entered_otp:
             user_data = request.session.get('temp_user_data')
 
-            user = User.objects.create_user(username=email, email=email, password=user_data['password'])
-            user.first_name = user_data['first_name']
-            user.last_name = user_data['last_name']
-            user.is_active = True 
-            user.save()
+            # Create user
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=user_data['password'],
+                first_name=user_data['first_name'],
+                last_name=user_data['last_name']
+            )
 
-            UserProfile.objects.create(user=user, role=user_data['role'])
+            # Create user profile
+            UserProfile.objects.create(
+                user=user,
+                role=user_data['role']
+            )
 
-            del otp_storage[email]
+            # Clear session data
             request.session.pop('temp_user_data', None)
+            request.session.pop('otp', None)
 
             messages.success(request, "Your account has been activated! You can now log in.")
             return redirect("login")
@@ -213,10 +212,16 @@ def my_courses(request):
     
     if user_profile.role == 'manager':
         courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
+        template = 'manager/my_courses.html'
     else:  # employee
-        courses = Course.objects.filter(enrolled_users=request.user).order_by('-created_at')
+        # Get courses through the Enrollment model
+        enrolled_courses = Course.objects.filter(
+            enrollment__user=request.user
+        ).order_by('-created_at')
+        courses = enrolled_courses
+        template = 'employee/my_courses.html'
     
-    return render(request, 'my_courses.html', {
+    return render(request, template, {
         'courses': courses,
         'user_profile': user_profile
     })
@@ -491,4 +496,42 @@ def employee_dashboard(request):
     context = {
         'user_profile': user_profile,
     }
-    return render(request, 'employee/dashboard.html', context)    
+    return render(request, 'employee/dashboard.html', context)
+
+@login_required
+def available_courses(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    
+    # Get all active courses that the user is not enrolled in
+    enrolled_course_ids = Course.objects.filter(
+        enrollment__user=request.user
+    ).values_list('id', flat=True)
+    
+    available_courses = Course.objects.filter(
+        is_active=True
+    ).exclude(
+        id__in=enrolled_course_ids
+    ).order_by('-created_at')
+    
+    return render(request, 'employee/available_courses.html', {
+        'courses': available_courses,
+        'user_profile': user_profile
+    })
+
+@login_required
+def course_form(request):
+    # Check if user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, 'Access Denied: Manager privileges required.')
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
+    context = {
+        'user_profile': user_profile,
+    }
+    
+    return render(request, 'course_form.html', context)    

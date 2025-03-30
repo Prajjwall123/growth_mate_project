@@ -22,6 +22,7 @@ urlpatterns = [
     path('manager/courses/<int:course_id>/edit/', views.edit_course, name='edit_course'),
     path('manager/courses/<int:course_id>/', views.view_course, name='view_course'),
     path('manager/lessons/add/', views.add_lesson, name='add_lesson'),
+    path('manager/courses/form/', views.course_form, name='course_form'),
 
     # Profile Settings Route
     path('profile/settings/', views.profile_settings, name='profile_settings'),
@@ -29,6 +30,7 @@ urlpatterns = [
     # Employee Dashboard Route
     path('employee/dashboard/', views.employee_dashboard, name='employee_dashboard'),
     path('my-courses/', views.my_courses, name='my_courses'),
+    path('available-courses/', views.available_courses, name='available_courses'),
 ]
 
 # Serve media files during development

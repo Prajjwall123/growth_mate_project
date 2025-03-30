@@ -12,7 +12,7 @@
     <nav class="flex-1">
         <div class="px-4 py-2">
             <div class="flex items-center space-x-3">
-                <img src="{{ user_profile.profile_pic.url|default:'/media/static/assets/images/defaultuser.jpg' }}" alt="Profile" class="w-10 h-10 rounded-full">
+                <img src="{{ user_profile.profile_pic.url|default:'/static/assets/images/default_profile.jpg' }}" alt="Profile" class="w-10 h-10 rounded-full">
                 <div>
                     <p class="text-sm font-semibold text-gray-700">{{ request.user.get_full_name }}</p>
                     <p class="text-xs text-gray-500">{{ user_profile.role|title }}</p>

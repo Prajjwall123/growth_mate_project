@@ -7,9 +7,15 @@
         <!-- Cover Image Section -->
         <div class="relative mb-24">
             <div class="h-48 bg-orange-500 rounded-t-lg overflow-hidden">
-                <img src="{{ user_profile.cover_image.url|default:'/media/static/assets/images/default_cover.jpg' }}" 
-                     alt="Cover" 
-                     class="w-full h-full object-cover">
+                {% if user_profile.cover_image %}
+                    <img src="{{ user_profile.cover_image.url }}" 
+                         alt="Cover" 
+                         class="w-full h-full object-cover">
+                {% else %}
+                    <img src="{% static 'assets/images/default_cover.jpg' %}" 
+                         alt="Cover" 
+                         class="w-full h-full object-cover">
+                {% endif %}
                 <button class="absolute top-4 right-4 bg-white bg-opacity-90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-opacity-100 transition-all">
                     <i class="fas fa-camera mr-2"></i> Change Cover
                 </button>
@@ -18,9 +24,15 @@
             <!-- Profile Picture Section -->
             <div class="absolute left-8 -bottom-16">
                 <div class="relative group">
-                    <img src="{{ user_profile.profile_pic.url|default:'/media/static/assets/images/defaultuser.jpg' }}" 
-                         alt="Profile" 
-                         class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
+                    {% if user_profile.profile_picture %}
+                        <img src="{{ user_profile.profile_picture.url }}"
+                             alt="Profile Picture"
+                             class="w-32 h-32 rounded-full border-4 border-white object-cover">
+                    {% else %}
+                        <img src="{% static 'assets/images/default_profile.jpg' %}"
+                             alt="Profile Picture"
+                             class="w-32 h-32 rounded-full border-4 border-white object-cover">
+                    {% endif %}
                     <label for="profile_pic" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                         <span class="text-white text-sm"><i class="fas fa-camera mr-2"></i>Change</span>
                     </label>
