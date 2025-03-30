@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'social_django',
+    'crispy_forms',
+    'crispy_tailwind',
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
@@ -139,7 +142,7 @@ STATICFILES_DIRS = (BASE_DIR/'static',)
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type

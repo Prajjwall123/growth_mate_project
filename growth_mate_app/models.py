@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import User
+from django_cleanup.signals import cleanup_pre_delete
+from sorl.thumbnail import ImageField, delete
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -14,12 +16,12 @@ class UserProfile(models.Model):
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
 
-    profile_picture = models.ImageField(
+    profile_picture = ImageField(
         upload_to='profile_pictures/',
         blank=True,
         null=True
     )
-    cover_image = models.ImageField(
+    cover_image = ImageField(
         upload_to='cover_images/',
         blank=True,
         null=True
@@ -43,6 +45,27 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name} - {self.role}"
+
+    def save(self, *args, **kwargs):
+        # Delete old profile picture if it exists and is being updated
+        if self.pk:
+            try:
+                old_instance = UserProfile.objects.get(pk=self.pk)
+                if old_instance.profile_picture and self.profile_picture != old_instance.profile_picture:
+                    old_instance.profile_picture.delete(save=False)
+                if old_instance.cover_image and self.cover_image != old_instance.cover_image:
+                    old_instance.cover_image.delete(save=False)
+            except UserProfile.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete files when the profile is deleted
+        if self.profile_picture:
+            self.profile_picture.delete(save=False)
+        if self.cover_image:
+            self.cover_image.delete(save=False)
+        super().delete(*args, **kwargs)
 
 class Course(models.Model):
     image = models.ImageField(upload_to='static/course_images/', blank=True, default='static/assets/images/default_course.png')  

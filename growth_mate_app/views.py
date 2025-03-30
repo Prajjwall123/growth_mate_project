@@ -334,10 +334,19 @@ def profile_settings(request):
 
     if request.method == 'POST':
         # Handle file uploads
-        if 'profile_pic' in request.FILES:
-            user_profile.profile_pic = request.FILES['profile_pic']
+        if 'profile_picture' in request.FILES:
+            print("Profile picture uploaded:", request.FILES['profile_picture'])
+            user_profile.profile_picture = request.FILES['profile_picture']
+            user_profile.save()
+            messages.success(request, 'Profile picture updated successfully.')
+            return redirect('profile_settings')
+            
         if 'cover_image' in request.FILES:
+            print("Cover image uploaded:", request.FILES['cover_image'])
             user_profile.cover_image = request.FILES['cover_image']
+            user_profile.save()
+            messages.success(request, 'Cover image updated successfully.')
+            return redirect('profile_settings')
 
         # Update user fields
         request.user.first_name = request.POST.get('first_name', request.user.first_name)
@@ -349,6 +358,9 @@ def profile_settings(request):
             user_profile.professional_headline = request.POST.get('professional_headline', user_profile.professional_headline)
         user_profile.bio = request.POST.get('bio', user_profile.bio)
         user_profile.phone = request.POST.get('phone', user_profile.phone)
+        user_profile.gender = request.POST.get('gender', user_profile.gender)
+        user_profile.country = request.POST.get('country', user_profile.country)
+        user_profile.city = request.POST.get('city', user_profile.city)
         user_profile.save()
 
         # Handle password change

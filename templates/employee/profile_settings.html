@@ -12,26 +12,30 @@
                 {% else %}
                     <img src="{% static 'assets/images/default_cover.jpg' %}" alt="Cover" class="w-full h-full object-cover">
                 {% endif %}
-                <label for="cover_image" class="absolute top-4 right-4 cursor-pointer">
-                    <button type="button" onclick="document.getElementById('cover_image').click()" class="bg-white bg-opacity-90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-opacity-100 transition-all">
+                <form method="post" enctype="multipart/form-data" action="{% url 'profile_settings' %}" class="absolute top-4 right-4">
+                    {% csrf_token %}
+                    <label class="bg-white bg-opacity-90 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-opacity-100 transition-all cursor-pointer">
                         <i class="fas fa-camera mr-2"></i> Change Cover
-                    </button>
-                </label>
-                <input type="file" id="cover_image" name="cover_image" class="hidden" accept="image/*">
+                        <input type="file" name="cover_image" class="hidden" accept="image/*" onchange="this.form.submit()">
+                    </label>
+                </form>
             </div>
             
             <!-- Profile Picture Section -->
             <div class="absolute left-8 -bottom-16">
                 <div class="relative group">
-                    {% if user_profile.profile_pic %}
-                        <img src="{{ user_profile.profile_pic.url }}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
+                    {% if user_profile.profile_picture %}
+                        <img src="{{ user_profile.profile_picture.url }}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
                     {% else %}
                         <img src="{% static 'assets/images/default_profile.jpg' %}" alt="Profile" class="w-32 h-32 rounded-full border-4 border-white object-cover shadow-lg">
                     {% endif %}
-                    <label for="profile_pic" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-                        <span class="text-white text-sm"><i class="fas fa-camera mr-2"></i>Change</span>
-                    </label>
-                    <input type="file" id="profile_pic" name="profile_pic" class="hidden" accept="image/*">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'profile_settings' %}" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% csrf_token %}
+                        <label class="cursor-pointer">
+                            <i class="fas fa-camera text-white text-2xl"></i>
+                            <input type="file" name="profile_picture" class="hidden" accept="image/*" onchange="this.form.submit()">
+                        </label>
+                    </form>
                 </div>
             </div>
         </div>
@@ -146,4 +150,13 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Auto-submit forms when files are selected
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+</script>
 {% endblock %} 
