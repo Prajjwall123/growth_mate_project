@@ -26,77 +26,77 @@
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <!-- Total Users -->
-            <div class="bg-white rounded-lg p-6">
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-medium text-gray-500">Total Users</h3>
-                        <span class="p-2 bg-orange-100 rounded-full">
-                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                        </span>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
                     </div>
-                    <div class="flex items-baseline mt-2">
-                        <span class="text-2xl font-bold">234</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 12% from last month</span>
+                    <div class="ml-4">
+                        <h2 class="text-sm font-medium text-gray-600">Total Users</h2>
+                        <p class="text-lg font-semibold text-gray-700">{{ stats.total_users }}</p>
                     </div>
                 </div>
             </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-sm font-medium text-gray-600">Active Users</h2>
+                        <p class="text-lg font-semibold text-gray-700">{{ stats.active_users }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-red-100 text-red-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-sm font-medium text-gray-600">Inactive Users</h2>
+                        <p class="text-lg font-semibold text-gray-700">{{ stats.inactive_users }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-sm font-medium text-gray-600">Course Completion</h2>
+                        <p class="text-lg font-semibold text-gray-700">{{ stats.course_completion }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            <!-- Active Users -->
-            <div class="bg-white rounded-lg p-6">
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-medium text-gray-500">Active Users</h3>
-                        <span class="p-2 bg-green-100 rounded-full">
-                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        </span>
-                    </div>
-                    <div class="flex items-baseline mt-2">
-                        <span class="text-2xl font-bold">136</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 8% from last month</span>
-                    </div>
+        <!-- Search and Filter -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <form method="GET" class="flex flex-wrap gap-4">
+                <div class="flex-1">
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search users..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-            </div>
-
-            <!-- Inactive Users -->
-            <div class="bg-white rounded-lg p-6">
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-medium text-gray-500">Inactive Users</h3>
-                        <span class="p-2 bg-red-100 rounded-full">
-                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </span>
-                    </div>
-                    <div class="flex items-baseline mt-2">
-                        <span class="text-2xl font-bold">98</span>
-                        <span class="ml-2 text-sm text-red-500">↓ 3% from last month</span>
-                    </div>
+                <div class="w-48">
+                    <select name="status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
                 </div>
-            </div>
-
-            <!-- Course Completion -->
-            <div class="bg-white rounded-lg p-6">
-                <div class="flex flex-col">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-medium text-gray-500">Course Completion</h3>
-                        <span class="p-2 bg-blue-100 rounded-full">
-                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </span>
-                    </div>
-                    <div class="flex items-baseline mt-2">
-                        <span class="text-2xl font-bold">90%</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 5% from last month</span>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Search
+                </button>
+            </form>
         </div>
 
         <!-- User List Section -->
@@ -140,86 +140,46 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
+                        {% for employee in employees %}
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Uttam+Shrestha" alt="">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        {% if employee.userprofile.profile_picture %}
+                                            <img class="h-10 w-10 rounded-full" src="{{ employee.userprofile.profile_picture.url }}" alt="">
+                                        {% else %}
+                                            <img class="h-10 w-10 rounded-full" src="{% static 'assets/images/default_profile.png' %}" alt="">
+                                        {% endif %}
+                                    </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Uttam Shrestha</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ employee.get_full_name }}</div>
+                                        <div class="text-sm text-gray-500">{{ employee.email }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Application Management</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+61 452398674</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Australia</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div class="text-sm text-gray-900">{{ employee.enrolled_courses_count }} enrolled</div>
+                                <div class="text-sm text-gray-500">{{ employee.completed_courses_count }} completed</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ employee.phone }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ employee.country }}
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if employee.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ employee.is_active|yesno:"Active,Inactive" }}
+                                </span>
                             </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Sarah+Johnson" alt="">
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Sarah Johnson</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Digital Marketing</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+1 234-567-8901</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">United States</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                No users found.
                             </td>
                         </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Michael+Chen" alt="">
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Michael Chen</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Web Development</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+86 123-4567-890</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">China</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Inactive</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Emma+Wilson" alt="">
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Emma Wilson</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">UX Design</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+44 20-7123-4567</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">United Kingdom</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Carlos+Rodriguez" alt="">
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">Carlos Rodriguez</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Data Analytics</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">+34 612-345-678</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Spain</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>
-                            </td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>

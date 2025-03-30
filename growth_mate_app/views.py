@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -18,12 +18,13 @@ import random
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Avg
 from django.views.decorators.http import require_POST
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from social_django.utils import load_strategy, load_backend
 from social_core.backends.oauth import BaseOAuth2PKCE
 from social_core.exceptions import MissingBackend
+from django.db.models import Q
 
 
 otp_storage = {}
@@ -463,15 +464,69 @@ def users_view(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
-    # Static data for users page
+    # Get search query and filters
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', 'all')
+    page = request.GET.get('page', 1)
+
+    # Base queryset for employees
+    employees = User.objects.filter(userprofile__role='employee')
+
+    # Apply search filter
+    if search_query:
+        employees = employees.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    # Apply status filter
+    if status_filter == 'active':
+        employees = employees.filter(is_active=True)
+    elif status_filter == 'inactive':
+        employees = employees.filter(is_active=False)
+
+    # Calculate statistics
+    total_users = User.objects.filter(userprofile__role='employee').count()
+    active_users = User.objects.filter(userprofile__role='employee', is_active=True).count()
+    inactive_users = total_users - active_users
+
+    # Calculate average course completion rate
+    enrollments = Enrollment.objects.filter(user__userprofile__role='employee')
+    total_enrollments = enrollments.count()
+    completed_enrollments = enrollments.filter(completed=True).count()
+    course_completion = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+
+    # Paginate the results
+    paginator = Paginator(employees, 10)  # Show 10 users per page
+    try:
+        employees = paginator.page(page)
+    except PageNotAnInteger:
+        employees = paginator.page(1)
+    except EmptyPage:
+        employees = paginator.page(paginator.num_pages)
+
+    # Get additional user data
+    for employee in employees:
+        # Get enrolled courses count
+        employee.enrolled_courses_count = Enrollment.objects.filter(user=employee).count()
+        # Get completed courses count
+        employee.completed_courses_count = Enrollment.objects.filter(user=employee, completed=True).count()
+        # Get last login
+        employee.last_login = employee.last_login.strftime('%Y-%m-%d %H:%M') if employee.last_login else 'Never'
+
     context = {
         'user_profile': user_profile,
+        'employees': employees,
         'stats': {
-            'total_users': 234,
-            'active_users': 136,
-            'inactive_users': 98,
-            'course_completion': 90
-        }
+            'total_users': total_users,
+            'active_users': active_users,
+            'inactive_users': inactive_users,
+            'course_completion': course_completion
+        },
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'page_obj': employees,
     }
     
     return render(request, 'manager/users.html', context)
