@@ -89,6 +89,17 @@ class Course(models.Model):
     def total_duration(self):
         return sum(lesson.duration for lesson in self.lesson_set.all())
 
+    @property
+    def completion_rate(self):
+        total_enrollments = self.enrollment_set.count()
+        if total_enrollments == 0:
+            return 0
+        completed_enrollments = self.enrollment_set.filter(completed=True).count()
+        return round((completed_enrollments / total_enrollments) * 100, 2)
+
+    @property
+    def active_enrollments(self):
+        return self.enrollment_set.filter(completed=False).count()
 
 class CourseContent(models.Model):
     course = models.ForeignKey(Course, related_name="contents", on_delete=models.CASCADE)
@@ -118,6 +129,8 @@ class Enrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(default=False)
     progress = models.IntegerField(default=0)  # Store progress as percentage
+    last_accessed = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ['user', 'course']
@@ -125,6 +138,39 @@ class Enrollment(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.course.title}"
 
+    def save(self, *args, **kwargs):
+        if self.completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        super().save(*args, **kwargs)
+
+class DashboardStats(models.Model):
+    date = models.DateField(unique=True)
+    total_users = models.IntegerField(default=0)
+    total_courses = models.IntegerField(default=0)
+    active_courses = models.IntegerField(default=0)
+    course_completion_rate = models.FloatField(default=0)
+    user_growth_rate = models.FloatField(default=0)
+    course_growth_rate = models.FloatField(default=0)
+    completion_growth_rate = models.FloatField(default=0)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"Stats for {self.date}"
+
+class StudentProgress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    progress_percentage = models.FloatField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'course']
+        ordering = ['-progress_percentage']
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.course.title} - {self.progress_percentage}%"
 
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)

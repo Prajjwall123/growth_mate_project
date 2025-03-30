@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -185,23 +185,73 @@ def manager_dashboard(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
-    # Static data for dashboard
+    # Get today's date and last month's date
+    today = timezone.now().date()
+    last_month = today - timezone.timedelta(days=30)
+
+    # Get or create today's stats
+    today_stats, created = DashboardStats.objects.get_or_create(date=today)
+    last_month_stats = DashboardStats.objects.filter(date=last_month).first()
+
+    # Calculate current stats
+    total_users = User.objects.filter(userprofile__role='employee').count()
+    total_courses = Course.objects.filter(uploaded_by=request.user).count()
+    active_courses = Course.objects.filter(uploaded_by=request.user, is_active=True).count()
+    
+    # Calculate course completion rate
+    all_courses = Course.objects.filter(uploaded_by=request.user)
+    total_enrollments = sum(course.enrollment_set.count() for course in all_courses)
+    completed_enrollments = sum(course.enrollment_set.filter(completed=True).count() for course in all_courses)
+    course_completion_rate = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+
+    # Calculate growth rates
+    if last_month_stats:
+        user_growth = ((total_users - last_month_stats.total_users) / last_month_stats.total_users * 100) if last_month_stats.total_users > 0 else 0
+        course_growth = ((total_courses - last_month_stats.total_courses) / last_month_stats.total_courses * 100) if last_month_stats.total_courses > 0 else 0
+        completion_growth = course_completion_rate - last_month_stats.course_completion_rate
+    else:
+        user_growth = course_growth = completion_growth = 0
+
+    # Update today's stats
+    today_stats.total_users = total_users
+    today_stats.total_courses = total_courses
+    today_stats.active_courses = active_courses
+    today_stats.course_completion_rate = course_completion_rate
+    today_stats.user_growth_rate = user_growth
+    today_stats.course_growth_rate = course_growth
+    today_stats.completion_growth_rate = completion_growth
+    today_stats.save()
+
+    # Get top students
+    top_students = StudentProgress.objects.filter(
+        course__uploaded_by=request.user
+    ).select_related('user').order_by('-progress_percentage')[:4]
+
+    # Get course completion data
+    course_completion = []
+    for course in all_courses:
+        course_completion.append({
+            'title': course.title,
+            'progress': course.completion_rate
+        })
+
     context = {
         'user_profile': user_profile,
-        'total_users': 324,
-        'total_courses': 98,
-        'active_courses': 92,
+        'total_users': total_users,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'course_completion_rate': course_completion_rate,
+        'user_growth': round(user_growth, 1),
+        'course_growth': round(course_growth, 1),
+        'completion_growth': round(completion_growth, 1),
         'top_students': [
-            {'name': 'Uttam Shrestha', 'progress': 95},
-            {'name': 'Nisha Khadka', 'progress': 40},
-            {'name': 'Simran KC', 'progress': 50},
-            {'name': 'Sarah Johnson', 'progress': 85}
+            {
+                'name': progress.user.get_full_name(),
+                'progress': progress.progress_percentage
+            }
+            for progress in top_students
         ],
-        'course_completion': [
-            {'title': 'Health Science', 'progress': 70, 'total': 100},
-            {'title': 'Fitness', 'progress': 40, 'total': 100},
-            {'title': 'Sports Management', 'progress': 50, 'total': 100}
-        ]
+        'course_completion': course_completion
     }
     
     return render(request, 'manager/dashboard.html', context)
