@@ -70,66 +70,48 @@ class UserProfile(models.Model):
 class Course(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses_taught', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    category = models.ForeignKey('CourseCategory', on_delete=models.CASCADE, null=True, blank=True)
+    instructor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses', null=True, blank=True)
     thumbnail = models.ImageField(upload_to='course_thumbnails/', null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    is_active = models.BooleanField(default=True)
-    category = models.ForeignKey('CourseCategory', on_delete=models.SET_NULL, null=True, blank=True)
-    tags = models.ManyToManyField('CourseTag', blank=True)
-    duration = models.DurationField(null=True, blank=True)
+    duration = models.IntegerField(help_text="Duration in minutes", null=True, blank=True)
     level = models.CharField(max_length=20, choices=[
         ('beginner', 'Beginner'),
         ('intermediate', 'Intermediate'),
         ('advanced', 'Advanced')
-    ], default='beginner')
+    ])
     prerequisites = models.TextField(blank=True)
     objectives = models.TextField(blank=True)
     target_audience = models.TextField(blank=True)
-    certificate_available = models.BooleanField(default=False)
-    certificate_template = models.ImageField(upload_to='certificate_templates/', null=True, blank=True)
-    max_students = models.IntegerField(default=0)  # 0 for unlimited
+    is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
-    discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    discount_end_date = models.DateTimeField(null=True, blank=True)
-    views_count = models.IntegerField(default=0)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
-    total_ratings = models.IntegerField(default=0)
-
-    class Meta:
-        ordering = ['-created_at']
+    certificate_available = models.BooleanField(default=False)
+    max_students = models.IntegerField(null=True, blank=True)
+    enrolled_students = models.ManyToManyField(User, through='Enrollment', related_name='enrolled_courses')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
     @property
-    def completion_rate(self):
-        total_enrollments = self.enrollments.count()
-        if total_enrollments == 0:
-            return 0
-        completed_enrollments = self.enrollments.filter(completed=True).count()
-        return round((completed_enrollments / total_enrollments) * 100, 2)
-
-    @property
     def active_enrollments(self):
-        return self.enrollments.filter(completed=False).count()
+        return self.enrollments.filter(status='active').count()
 
     @property
-    def total_enrollments(self):
-        return self.enrollments.count()
+    def completion_rate(self):
+        total = self.enrollments.count()
+        if total == 0:
+            return 0
+        completed = self.enrollments.filter(status='completed').count()
+        return round((completed / total) * 100, 1)
 
     @property
-    def is_discounted(self):
-        if self.discount_price and self.discount_end_date:
-            return timezone.now() <= self.discount_end_date
-        return False
+    def rating(self):
+        return 4.5  # Placeholder for now
 
     @property
-    def current_price(self):
-        if self.is_discounted:
-            return self.discount_price
-        return self.price
+    def total_ratings(self):
+        return 120  # Placeholder for now
 
 class CourseCategory(models.Model):
     name = models.CharField(max_length=100)
@@ -231,7 +213,7 @@ class Section(models.Model):
 
 class Enrollment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(default=False)
     progress = models.IntegerField(default=0)  # Store progress as percentage

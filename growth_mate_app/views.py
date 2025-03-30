@@ -642,92 +642,61 @@ def available_courses(request):
 
 @login_required
 def manager_courses(request):
-    # Check if the user is a manager
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-        if user_profile.role != 'manager':
-            messages.error(request, "Access denied. Manager privileges required.")
-            return redirect('home')
-    except UserProfile.DoesNotExist:
-        messages.error(request, "User profile not found.")
+    if not request.user.userprofile.role == 'manager':
+        messages.error(request, 'Access denied. Only managers can access this page.')
         return redirect('home')
-
-    # Get search query and filters
+    
+    # Get search and filter parameters
     search_query = request.GET.get('search', '')
     category_filter = request.GET.get('category', 'all')
     status_filter = request.GET.get('status', 'all')
-    page = request.GET.get('page', 1)
-
-    # Base queryset for courses
+    
+    # Get courses for the logged-in instructor
     courses = Course.objects.filter(instructor=request.user)
-
-    # Apply search filter
+    
+    # Apply filters
     if search_query:
-        courses = courses.filter(
-            Q(title__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
-
-    # Apply category filter
+        courses = courses.filter(title__icontains=search_query)
     if category_filter != 'all':
         courses = courses.filter(category_id=category_filter)
-
-    # Apply status filter
-    if status_filter == 'active':
-        courses = courses.filter(is_active=True)
-    elif status_filter == 'inactive':
-        courses = courses.filter(is_active=False)
-
+    if status_filter != 'all':
+        courses = courses.filter(is_active=(status_filter == 'active'))
+    
     # Calculate statistics
-    total_courses = Course.objects.filter(instructor=request.user).count()
-    active_courses = Course.objects.filter(instructor=request.user, is_active=True).count()
-    total_enrollments = Enrollment.objects.filter(course__instructor=request.user).count()
-    completed_enrollments = Enrollment.objects.filter(course__instructor=request.user, completed=True).count()
-    completion_rate = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
-
-    # Get categories for filter
-    categories = CourseCategory.objects.all()
-
-    # Paginate the results
-    paginator = Paginator(courses, 10)  # Show 10 courses per page
-    try:
-        courses = paginator.page(page)
-    except PageNotAnInteger:
-        courses = paginator.page(1)
-    except EmptyPage:
-        courses = paginator.page(paginator.num_pages)
-
-    # Get additional course data
+    stats = {
+        'total_courses': courses.count(),
+        'active_courses': courses.filter(is_active=True).count(),
+        'total_enrollments': Enrollment.objects.filter(course__in=courses).count(),
+        'completion_rate': 0
+    }
+    
+    # Calculate completion rate
+    total_enrollments = Enrollment.objects.filter(course__in=courses).count()
+    if total_enrollments > 0:
+        completed_enrollments = Enrollment.objects.filter(
+            course__in=courses,
+            completed=True
+        ).count()
+        stats['completion_rate'] = round((completed_enrollments / total_enrollments) * 100, 1)
+    
+    # Add additional course data
     for course in courses:
-        # Get enrolled students count
-        course.enrolled_students = course.enrollments.count()
-        # Get completion rate
-        course.completion_rate = course.completion_rate
-        # Get active enrollments
-        course.active_enrollments = course.active_enrollments
-        # Get total revenue
-        course.total_revenue = course.enrollments.filter(completed=True).count() * course.price
-        # Get average rating
-        course.rating = course.rating
-        # Get total ratings
-        course.total_ratings = course.total_ratings
-
+        course.enrolled_students_count = course.enrollments.count()
+        course.active_enrollments_count = course.enrollments.filter(completed=False).count()
+    
+    # Pagination
+    paginator = Paginator(courses, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'user_profile': user_profile,
-        'courses': courses,
-        'categories': categories,
-        'stats': {
-            'total_courses': total_courses,
-            'active_courses': active_courses,
-            'total_enrollments': total_enrollments,
-            'completion_rate': completion_rate
-        },
+        'user_profile': request.user.userprofile,
+        'courses': page_obj,
+        'stats': stats,
         'search_query': search_query,
         'category_filter': category_filter,
         'status_filter': status_filter,
-        'page_obj': courses,
     }
-    
     return render(request, 'manager/courses.html', context)
 
 @login_required
@@ -751,7 +720,6 @@ def course_form(request, course_id=None):
         # Handle form submission
         title = request.POST.get('title')
         description = request.POST.get('description')
-        price = request.POST.get('price')
         category_id = request.POST.get('category')
         duration = request.POST.get('duration')
         level = request.POST.get('level')
@@ -762,64 +730,56 @@ def course_form(request, course_id=None):
         is_featured = request.POST.get('is_featured') == 'on'
         certificate_available = request.POST.get('certificate_available') == 'on'
         max_students = request.POST.get('max_students')
-        discount_price = request.POST.get('discount_price')
-        discount_end_date = request.POST.get('discount_end_date')
 
-        if course:
-            # Update existing course
-            course.title = title
-            course.description = description
-            course.price = price
-            course.category_id = category_id
-            course.duration = duration
-            course.level = level
-            course.prerequisites = prerequisites
-            course.objectives = objectives
-            course.target_audience = target_audience
-            course.is_active = is_active
-            course.is_featured = is_featured
-            course.certificate_available = certificate_available
-            course.max_students = max_students
-            if discount_price and discount_end_date:
-                course.discount_price = discount_price
-                course.discount_end_date = discount_end_date
-            course.save()
-            messages.success(request, 'Course updated successfully.')
-        else:
-            # Create new course
-            course = Course.objects.create(
-                title=title,
-                description=description,
-                price=price,
-                category_id=category_id,
-                duration=duration,
-                level=level,
-                prerequisites=prerequisites,
-                objectives=objectives,
-                target_audience=target_audience,
-                is_active=is_active,
-                is_featured=is_featured,
-                certificate_available=certificate_available,
-                max_students=max_students,
-                instructor=request.user
-            )
-            if discount_price and discount_end_date:
-                course.discount_price = discount_price
-                course.discount_end_date = discount_end_date
+        try:
+            if course:
+                # Update existing course
+                course.title = title
+                course.description = description
+                course.category_id = category_id
+                course.duration = duration
+                course.level = level
+                course.prerequisites = prerequisites
+                course.objectives = objectives
+                course.target_audience = target_audience
+                course.is_active = is_active
+                course.is_featured = is_featured
+                course.certificate_available = certificate_available
+                course.max_students = max_students
                 course.save()
-            messages.success(request, 'Course created successfully.')
+                messages.success(request, 'Course updated successfully.')
+            else:
+                # Create new course
+                course = Course.objects.create(
+                    title=title,
+                    description=description,
+                    category_id=category_id,
+                    duration=duration,
+                    level=level,
+                    prerequisites=prerequisites,
+                    objectives=objectives,
+                    target_audience=target_audience,
+                    is_active=is_active,
+                    is_featured=is_featured,
+                    certificate_available=certificate_available,
+                    max_students=max_students,
+                    instructor=request.user
+                )
+                messages.success(request, 'Course created successfully.')
 
-        return redirect('manager_courses')
+            # Handle thumbnail upload
+            if 'thumbnail' in request.FILES:
+                course.thumbnail = request.FILES['thumbnail']
+                course.save()
 
-    # Get categories for the form
-    categories = CourseCategory.objects.all()
-    tags = CourseTag.objects.all()
+            return redirect('manager_courses')
+        except Exception as e:
+            messages.error(request, f'Error saving course: {str(e)}')
+            return redirect('manager_courses')
 
     context = {
         'user_profile': user_profile,
         'course': course,
-        'categories': categories,
-        'tags': tags,
     }
     
     return render(request, 'manager/course_form.html', context)

@@ -24,31 +24,27 @@ class CourseContentInline(admin.StackedInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'instructor', 'category', 'price', 'is_active', 'created_at')
-    list_filter = ('is_active', 'category', 'level', 'created_at')
-    search_fields = ('title', 'description', 'instructor__username', 'instructor__email')
-    ordering = ('-created_at',)
-    filter_horizontal = ('tags',)
-    readonly_fields = ('rating', 'total_ratings', 'views_count')
+    list_display = ('title', 'category', 'instructor', 'is_active', 'is_featured', 'created_at')
+    list_filter = ('category', 'is_active', 'is_featured', 'level')
+    search_fields = ('title', 'description')
+    readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description', 'instructor', 'category', 'tags', 'thumbnail')
+            'fields': ('title', 'description', 'category', 'instructor', 'thumbnail')
         }),
         ('Course Details', {
-            'fields': ('price', 'duration', 'level', 'prerequisites', 'objectives', 'target_audience')
+            'fields': ('duration', 'level', 'prerequisites', 'objectives', 'target_audience')
         }),
         ('Settings', {
             'fields': ('is_active', 'is_featured', 'certificate_available', 'max_students')
         }),
-        ('Discount', {
-            'fields': ('discount_price', 'discount_end_date')
-        }),
-        ('Statistics', {
-            'fields': ('rating', 'total_ratings', 'views_count'),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
-    inlines = [CourseContentInline]  
+    ordering = ('-created_at',)
+    inlines = [CourseContentInline]
 
 
 @admin.register(CourseCategory)
