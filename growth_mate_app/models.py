@@ -78,7 +78,7 @@ class Course(models.Model):
         ('beginner', 'Beginner'),
         ('intermediate', 'Intermediate'),
         ('advanced', 'Advanced')
-    ])
+    ], default='beginner')
     prerequisites = models.TextField(blank=True)
     objectives = models.TextField(blank=True)
     target_audience = models.TextField(blank=True)
@@ -95,14 +95,14 @@ class Course(models.Model):
 
     @property
     def active_enrollments(self):
-        return self.enrollments.filter(status='active').count()
+        return self.enrollments.filter(completed=False).count()
 
     @property
     def completion_rate(self):
         total = self.enrollments.count()
         if total == 0:
             return 0
-        completed = self.enrollments.filter(status='completed').count()
+        completed = self.enrollments.filter(completed=True).count()
         return round((completed / total) * 100, 1)
 
     @property

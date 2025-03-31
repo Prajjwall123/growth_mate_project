@@ -267,15 +267,20 @@ def my_courses(request):
     user_profile = get_object_or_404(UserProfile, user=request.user)
     
     if user_profile.role == 'manager':
-        courses = Course.objects.filter(uploaded_by=request.user).order_by('-created_at')
+        courses = Course.objects.filter(instructor=request.user).order_by('-created_at')
         template = 'manager/my_courses.html'
     else:  # employee
-        # Get courses through the Enrollment model
+        # Get courses through the enrollments related name
         enrolled_courses = Course.objects.filter(
-            enrollment__user=request.user
+            enrollments__user=request.user
         ).order_by('-created_at')
         courses = enrolled_courses
         template = 'employee/my_courses.html'
+    
+    # Add additional course data
+    for course in courses:
+        course.enrolled_students_count = course.enrollments.count()
+        course.active_enrollments_count = course.enrollments.filter(completed=False).count()
     
     return render(request, template, {
         'courses': courses,
@@ -626,7 +631,7 @@ def available_courses(request):
     
     # Get all active courses that the user is not enrolled in
     enrolled_course_ids = Course.objects.filter(
-        enrollment__user=request.user
+        enrollments__user=request.user
     ).values_list('id', flat=True)
     
     available_courses = Course.objects.filter(
@@ -808,4 +813,36 @@ def delete_course(request, course_id):
         'course': course,
     }
     
-    return render(request, 'manager/delete_course.html', context)    
+    return render(request, 'manager/delete_course.html', context)
+
+@login_required
+def enroll_course(request, course_id):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'employee':
+        messages.error(request, 'Only employees can enroll in courses.')
+        return redirect('home')
+    
+    course = get_object_or_404(Course, id=course_id, is_active=True)
+    
+    # Check if user is already enrolled
+    if Enrollment.objects.filter(user=request.user, course=course).exists():
+        messages.warning(request, 'You are already enrolled in this course.')
+        return redirect('my_courses')
+    
+    # Check if course has reached maximum students
+    if course.max_students and course.enrollments.count() >= course.max_students:
+        messages.error(request, 'This course has reached its maximum number of students.')
+        return redirect('available_courses')
+    
+    try:
+        # Create enrollment
+        Enrollment.objects.create(
+            user=request.user,
+            course=course,
+            enrolled_at=timezone.now()
+        )
+        messages.success(request, f'Successfully enrolled in {course.title}!')
+        return redirect('my_courses')
+    except Exception as e:
+        messages.error(request, f'Error enrolling in course: {str(e)}')
+        return redirect('available_courses')    
