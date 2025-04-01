@@ -22,7 +22,8 @@ urlpatterns = [
     path('manager/courses/<int:course_id>/edit/', views.course_form, name='edit_course'),
     path('manager/courses/<int:course_id>/delete/', views.delete_course, name='delete_course'),
     path('manager/courses/<int:course_id>/', views.view_course, name='view_course'),
-    path('manager/lessons/add/', views.add_lesson, name='add_lesson'),
+    path('manager/courses/<int:course_id>/lessons/', views.manage_lessons, name='manage_lessons'),
+    path('manager/courses/form/<int:course_id>/', views.course_form, name='course_form'),
     path('manager/courses/form/', views.course_form, name='course_form'),
 
     # Profile Settings Route

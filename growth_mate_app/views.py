@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -706,87 +706,127 @@ def manager_courses(request):
 
 @login_required
 def course_form(request, course_id=None):
-    # Check if the user is a manager
+    # Check if user is a manager
     try:
         user_profile = UserProfile.objects.get(user=request.user)
         if user_profile.role != 'manager':
-            messages.error(request, "Access denied. Manager privileges required.")
+            messages.error(request, 'You do not have permission to access this page.')
             return redirect('home')
     except UserProfile.DoesNotExist:
-        messages.error(request, "User profile not found.")
+        messages.error(request, 'User profile not found.')
         return redirect('home')
 
-    # Get course instance if editing
     course = None
     if course_id:
-        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            messages.error(request, 'Course not found.')
+            return redirect('manager_courses')
 
     if request.method == 'POST':
-        # Handle form submission
+        # Handle course data
         title = request.POST.get('title')
         description = request.POST.get('description')
         category_id = request.POST.get('category')
-        duration = request.POST.get('duration')
         level = request.POST.get('level')
+        duration = request.POST.get('duration')
         prerequisites = request.POST.get('prerequisites')
         objectives = request.POST.get('objectives')
         target_audience = request.POST.get('target_audience')
+        max_students = request.POST.get('max_students')
         is_active = request.POST.get('is_active') == 'on'
         is_featured = request.POST.get('is_featured') == 'on'
         certificate_available = request.POST.get('certificate_available') == 'on'
-        max_students = request.POST.get('max_students')
 
-        try:
-            if course:
-                # Update existing course
-                course.title = title
-                course.description = description
-                course.category_id = category_id
-                course.duration = duration
-                course.level = level
-                course.prerequisites = prerequisites
-                course.objectives = objectives
-                course.target_audience = target_audience
-                course.is_active = is_active
-                course.is_featured = is_featured
-                course.certificate_available = certificate_available
-                course.max_students = max_students
-                course.save()
-                messages.success(request, 'Course updated successfully.')
-            else:
-                # Create new course
-                course = Course.objects.create(
-                    title=title,
-                    description=description,
-                    category_id=category_id,
-                    duration=duration,
-                    level=level,
-                    prerequisites=prerequisites,
-                    objectives=objectives,
-                    target_audience=target_audience,
-                    is_active=is_active,
-                    is_featured=is_featured,
-                    certificate_available=certificate_available,
-                    max_students=max_students,
-                    instructor=request.user
+        # Handle thumbnail
+        thumbnail = request.FILES.get('thumbnail')
+        if thumbnail and course and course.thumbnail:
+            # Delete old thumbnail if it exists
+            course.thumbnail.delete()
+
+        # Create or update course
+        if not course:
+            course = Course.objects.create(
+                title=title,
+                description=description,
+                category_id=category_id,
+                level=level,
+                duration=duration,
+                prerequisites=prerequisites,
+                objectives=objectives,
+                target_audience=target_audience,
+                max_students=max_students,
+                is_active=is_active,
+                is_featured=is_featured,
+                certificate_available=certificate_available,
+                thumbnail=thumbnail,
+                instructor=request.user
+            )
+        else:
+            course.title = title
+            course.description = description
+            course.category_id = category_id
+            course.level = level
+            course.duration = duration
+            course.prerequisites = prerequisites
+            course.objectives = objectives
+            course.target_audience = target_audience
+            course.max_students = max_students
+            course.is_active = is_active
+            course.is_featured = is_featured
+            course.certificate_available = certificate_available
+            if thumbnail:
+                course.thumbnail = thumbnail
+            course.save()
+
+        # Handle lessons
+        lesson_titles = request.POST.getlist('lesson_title[]')
+        lesson_durations = request.POST.getlist('lesson_duration[]')
+        
+        # Delete existing lessons if updating
+        if course_id:
+            course.lessons.all().delete()
+
+        # Create new lessons
+        for i in range(len(lesson_titles)):
+            if lesson_titles[i] and lesson_durations[i]:
+                lesson = Lesson.objects.create(
+                    course=course,
+                    title=lesson_titles[i],
+                    duration=lesson_durations[i],
+                    order=i
                 )
-                messages.success(request, 'Course created successfully.')
 
-            # Handle thumbnail upload
-            if 'thumbnail' in request.FILES:
-                course.thumbnail = request.FILES['thumbnail']
-                course.save()
+                # Handle content blocks for this lesson
+                content_blocks = request.POST.getlist(f'lesson_{i}_content_blocks[]')
+                content_types = request.POST.getlist(f'lesson_{i}_content_types[]')
+                content_files = request.FILES.getlist(f'lesson_{i}_content_files[]')
 
-            return redirect('manager_courses')
-        except Exception as e:
-            messages.error(request, f'Error saving course: {str(e)}')
-            return redirect('manager_courses')
+                for j in range(len(content_blocks)):
+                    if content_blocks[j]:
+                        content_type = content_types[j]
+                        content = content_blocks[j]
+                        file = content_files[j] if j < len(content_files) else None
+
+                        ContentBlock.objects.create(
+                            lesson=lesson,
+                            content_type=content_type,
+                            content=content,
+                            file=file,
+                            order=j
+                        )
+
+        messages.success(request, f'Course {"updated" if course_id else "created"} successfully.')
+        return redirect('manager_courses')
+
+    # Get categories for the form
+    categories = CourseCategory.objects.all()
 
     context = {
-        'user_profile': user_profile,
         'course': course,
+        'categories': categories,
     }
-    
     return render(request, 'manager/course_form.html', context)
 
 @login_required
@@ -845,4 +885,128 @@ def enroll_course(request, course_id):
         return redirect('my_courses')
     except Exception as e:
         messages.error(request, f'Error enrolling in course: {str(e)}')
-        return redirect('available_courses')    
+        return redirect('available_courses')
+
+@login_required
+def manage_lessons(request, course_id):
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, 'You do not have permission to manage lessons.')
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+
+    if request.method == 'POST':
+        try:
+            # Debug logging for POST data
+            print("\n=== POST Request Data ===")
+            print("POST data:", dict(request.POST))
+            print("FILES data:", dict(request.FILES))
+            
+            # Handle lesson updates and deletions
+            lesson_ids = request.POST.getlist('lesson_ids[]')
+            lesson_deleted = request.POST.getlist('lesson_deleted[]')
+            lesson_titles = request.POST.getlist('lesson_title[]')
+            lesson_durations = request.POST.getlist('lesson_duration[]')
+            
+            print("\n=== Lesson Data ===")
+            print("Lesson IDs:", lesson_ids)
+            print("Lesson Deleted:", lesson_deleted)
+            print("Lesson Titles:", lesson_titles)
+            print("Lesson Durations:", lesson_durations)
+            
+            # Get existing lessons to preserve their IDs
+            existing_lessons = {str(lesson.id): lesson for lesson in course.lessons.all()}
+            print("\n=== Existing Lessons ===")
+            print("Existing lessons:", existing_lessons)
+            
+            # Process each lesson
+            for index, (lesson_id, is_deleted) in enumerate(zip(lesson_ids, lesson_deleted)):
+                print(f"\n=== Processing Lesson {index + 1} ===")
+                print(f"Lesson ID: {lesson_id}")
+                print(f"Is Deleted: {is_deleted}")
+                
+                if is_deleted == 'true':
+                    # Delete the lesson if it exists
+                    if lesson_id in existing_lessons:
+                        print(f"Deleting lesson {lesson_id}")
+                        existing_lessons[lesson_id].delete()
+                    continue
+                
+                # Create or update lesson
+                if lesson_id in existing_lessons:
+                    print(f"Updating existing lesson {lesson_id}")
+                    lesson = existing_lessons[lesson_id]
+                    lesson.title = lesson_titles[index]
+                    lesson.duration = lesson_durations[index]
+                    lesson.order = index
+                    lesson.save()
+                else:
+                    print(f"Creating new lesson with title: {lesson_titles[index]}")
+                    lesson = Lesson.objects.create(
+                        course=course,
+                        title=lesson_titles[index],
+                        duration=lesson_durations[index],
+                        order=index
+                    )
+                
+                # Handle content blocks for this lesson
+                content_blocks = request.POST.getlist(f'lesson_{lesson.id}_content_block_text[]')
+                content_types = request.POST.getlist(f'lesson_{lesson.id}_content_block_type[]')
+                content_files = request.FILES.getlist(f'lesson_{lesson.id}_content_block_file[]')
+                
+                print(f"\n=== Content Blocks for Lesson {lesson.id} ===")
+                print(f"Text blocks: {content_blocks}")
+                print(f"Content types: {content_types}")
+                print(f"Content files: {content_files}")
+                
+                # Delete existing content blocks for this lesson
+                lesson.content_blocks.all().delete()
+                
+                # Create new content blocks
+                for i in range(len(content_blocks)):
+                    if not content_blocks[i] and not content_files[i]:
+                        continue
+                        
+                    content_type = content_types[i]
+                    content = content_blocks[i]
+                    file = content_files[i] if i < len(content_files) else None
+                    
+                    print(f"\nCreating content block {i + 1}:")
+                    print(f"Type: {content_type}")
+                    print(f"Content: {content}")
+                    print(f"File: {file}")
+                    
+                    try:
+                        content_block = ContentBlock.objects.create(
+                            lesson=lesson,
+                            content_type=content_type,
+                            content=content if content_type in ['text', 'video'] else None,
+                            file=file if content_type in ['image', 'file'] else None,
+                            order=i
+                        )
+                        print(f"Content block created successfully: {content_block.id}")
+                    except Exception as e:
+                        print(f"Error creating content block: {str(e)}")
+                        raise
+
+            messages.success(request, 'Lessons updated successfully.')
+            return redirect('course_form', course_id=course.id)
+            
+        except Exception as e:
+            print("\n=== Error in manage_lessons ===")
+            print("Error:", str(e))
+            messages.error(request, f'Error updating lessons: {str(e)}')
+            return redirect('manage_lessons', course_id=course.id)
+
+    # Order lessons by their order field
+    lessons = course.lessons.all().order_by('order')
+    
+    return render(request, 'manager/manage_lessons.html', {
+        'course': course,
+        'lessons': lessons,
+    })    

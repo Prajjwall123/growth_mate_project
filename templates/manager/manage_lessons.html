@@ -1,0 +1,417 @@
+{% extends 'manager/base.html' %}
+{% load static %}
+{% load course_filters %}
+{% block extra_css %}
+<style>
+.content-block {
+    transition: all 0.3s ease;
+}
+.content-block.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+.drop-zone {
+    border: 2px dashed #e5e7eb;
+    min-height: 100px;
+    transition: all 0.3s ease;
+}
+.drop-zone.active {
+    border-color: #f97316;
+    background-color: #fff7ed;
+}
+.lesson-item {
+    transition: all 0.3s ease;
+}
+.lesson-item.minimized .lesson-content {
+    display: none;
+}
+.lesson-item.minimized .lesson-header {
+    cursor: pointer;
+}
+.lesson-item.minimized .lesson-header:hover {
+    background-color: #f3f4f6;
+}
+.toggle-lesson svg {
+    transition: transform 0.3s ease;
+}
+.lesson-item.minimized .toggle-lesson svg {
+    transform: rotate(-90deg);
+}
+/* CKEditor-specific styles */
+.ck-editor__editable {
+    min-height: 200px;
+}
+.ck-content {
+    font-size: 14px;
+    line-height: 1.6;
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-gray-100">
+    <main class="ml-64 p-8">
+        <div class="mb-8">
+            <div class="flex items-center justify-start">
+                <div class="flex space-x-4">
+                    <a href="{% url 'course_form' course.id %}" class="text-gray-600 hover:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Manage Lessons - {{ course.title }}</h1>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" enctype="multipart/form-data" class="space-y-6" id="lessons-form">
+                {% csrf_token %}
+                <div id="lessons-container" class="space-y-4">
+                    {% for lesson in lessons %}
+                    <div class="lesson-item bg-gray-50 p-4 rounded-lg" data-lesson-id="{{ lesson.id }}">
+                        <input type="hidden" name="lesson_ids[]" value="{{ lesson.id }}">
+                        <input type="hidden" name="lesson_deleted[]" value="false">
+                        <div class="lesson-header flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <button type="button" class="toggle-lesson text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <h3 class="text-lg font-medium text-gray-800">Lesson {{ forloop.counter }}: <span class="lesson-title-display">{{ lesson.title }}</span></h3>
+                            </div>
+                            <button type="button" class="remove-lesson text-red-600 hover:text-red-800">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="lesson-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Lesson Title</label>
+                                    <input type="text" name="lesson_title[]" value="{{ lesson.title }}" required
+                                        class="lesson-title-input mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                                    <input type="number" name="lesson_duration[]" value="{{ lesson.duration }}" required
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-sm font-medium text-gray-700">Content Blocks</h4>
+                                    <div class="flex space-x-2">
+                                        <button type="button" class="add-content-block text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200" data-type="text">Text</button>
+                                        <button type="button" class="add-content-block text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200" data-type="image">Image</button>
+                                        <button type="button" class="add-content-block text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200" data-type="video">Video</button>
+                                        <button type="button" class="add-content-block text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200" data-type="file">File</button>
+                                    </div>
+                                </div>
+                                <div class="content-blocks space-y-4">
+                                    {% for block in lesson.content_blocks.all %}
+                                    <div class="content-block bg-white p-4 rounded-lg shadow" draggable="true" data-type="{{ block.content_type }}">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div class="flex items-center">
+                                                <button type="button" class="drag-handle mr-2 text-gray-400 hover:text-gray-600">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                                    </svg>
+                                                </button>
+                                                <span class="font-medium text-gray-700">{{ block.get_content_type_display }}</span>
+                                            </div>
+                                            <button type="button" class="remove-content-block text-gray-400 hover:text-red-500">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="content-editor">
+                                            {% if block.content_type == 'text' %}
+                                            <textarea class="ck-editor" name="lesson_{{ lesson.id }}_content_block_text[]">{{ block.content|safe }}</textarea>
+                                            {% elif block.content_type == 'image' %}
+                                            <div class="image-preview">
+                                                <img src="{{ block.file.url }}" alt="" class="max-w-full h-auto rounded">
+                                            </div>
+                                            <input type="file" name="lesson_{{ lesson.id }}_content_block_file[]" accept="image/*" class="mt-2">
+                                            {% elif block.content_type == 'video' %}
+                                            <div class="video-embed">
+                                                {{ block.content|safe }}
+                                            </div>
+                                            <input type="text" name="lesson_{{ lesson.id }}_content_block_text[]" value="{{ block.content }}" class="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500" placeholder="Enter video embed code">
+                                            {% elif block.content_type == 'file' %}
+                                            <div class="file-preview">
+                                                <a href="{{ block.file.url }}" target="_blank" class="flex items-center text-blue-600 hover:text-blue-800">
+                                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                    {{ block.file.name|split:'/'|last }}
+                                                </a>
+                                            </div>
+                                            <input type="file" name="lesson_{{ lesson.id }}_content_block_file[]" class="mt-2">
+                                            {% endif %}
+                                            <input type="hidden" name="lesson_{{ lesson.id }}_content_block_type[]" value="{{ block.content_type }}">
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="flex justify-center">
+                    <button type="button" id="add-lesson" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        Add Lesson
+                    </button>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'edit_course' course.id %}" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        Cancel
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+<!-- Templates -->
+{% include 'manager/templates/lesson_templates.html' %}
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+<script>
+let ckEditors = [];
+let dragSrcEl = null;
+
+// Add form submission debug
+document.getElementById('lessons-form').addEventListener('submit', function(e) {
+    console.log('Form submitted');
+    const formData = new FormData(this);
+    for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+    }
+});
+
+function initCKEditor(container) {
+    ClassicEditor
+        .create(container, {
+            toolbar: {
+                items: [
+                    'heading',
+                    '|',
+                    'bold',
+                    'italic',
+                    'underline',
+                    '|',
+                    'bulletedList',
+                    'numberedList',
+                    '|',
+                    'link',
+                    'imageUpload',
+                    '|',
+                    'undo',
+                    'redo'
+                ]
+            },
+            image: {
+                toolbar: [
+                    'imageTextAlternative',
+                    'imageStyle:inline',
+                    'imageStyle:block',
+                    'imageStyle:side'
+                ]
+            }
+        })
+        .then(editor => {
+            // Store the editor instance
+            ckEditors.push(editor);
+            
+            // Update the hidden input when content changes
+            editor.model.document.on('change:data', () => {
+                const content = editor.getData();
+                const hiddenInput = container.closest('.content-editor').querySelector('input[name="content_block_text[]"]');
+                if (hiddenInput) {
+                    hiddenInput.value = content;
+                }
+            });
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize existing CKEditor instances
+    document.querySelectorAll('.ck-editor').forEach(editor => {
+        initCKEditor(editor);
+    });
+
+    // Initialize toggle buttons for existing lessons
+    document.querySelectorAll('.toggle-lesson').forEach(button => {
+        button.addEventListener('click', function() {
+            const lessonItem = this.closest('.lesson-item');
+            lessonItem.classList.toggle('minimized');
+        });
+    });
+
+    // Add new lesson
+    document.getElementById('add-lesson').addEventListener('click', function() {
+        const lessonCount = document.querySelectorAll('.lesson-item').length + 1;
+        const newLesson = document.getElementById('lesson-template').content.cloneNode(true);
+        newLesson.querySelector('h3').textContent = `Lesson ${lessonCount}`;
+        document.getElementById('lessons-container').appendChild(newLesson);
+
+        // Initialize CKEditor in the new lesson
+        newLesson.querySelectorAll('.ck-editor').forEach(editor => {
+            initCKEditor(editor);
+        });
+
+        // Add toggle functionality to the new lesson
+        const toggleButton = newLesson.querySelector('.toggle-lesson');
+        toggleButton.addEventListener('click', function() {
+            const lessonItem = this.closest('.lesson-item');
+            lessonItem.classList.toggle('minimized');
+        });
+    });
+
+    // Remove lesson
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-lesson')) {
+            const lessonItem = e.target.closest('.lesson-item');
+            const deletedInput = lessonItem.querySelector('input[name="lesson_deleted[]"]');
+            deletedInput.value = 'true';
+            lessonItem.remove();
+            
+            // Update lesson numbers
+            const lessons = document.querySelectorAll('.lesson-item');
+            lessons.forEach((lesson, index) => {
+                lesson.querySelector('h3').innerHTML = `Lesson ${index + 1}: <span class="lesson-title-display">${lesson.querySelector('.lesson-title-input').value || 'Untitled'}</span>`;
+            });
+        }
+    });
+
+    // Add content block
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.add-content-block')) {
+            const button = e.target.closest('.add-content-block');
+            const type = button.dataset.type;
+            const template = document.getElementById(`${type}-block-template`);
+            const contentBlocks = button.closest('.lesson-item').querySelector('.content-blocks');
+            const newBlock = template.content.cloneNode(true);
+            const lessonId = button.closest('.lesson-item').dataset.lessonId;
+
+            // Update input names with lesson ID
+            newBlock.querySelectorAll('input[name^="content_block_"]').forEach(input => {
+                input.name = `lesson_${lessonId}_${input.name}`;
+            });
+
+            // Append the new block to the DOM
+            contentBlocks.appendChild(newBlock);
+
+            // Initialize CKEditor for text blocks
+            const addedBlock = contentBlocks.lastElementChild;
+            if (type === 'text') {
+                const ckEditor = addedBlock.querySelector('.ck-editor');
+                if (ckEditor) {
+                    initCKEditor(ckEditor);
+                }
+            }
+        }
+    });
+
+    // Remove content block
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-content-block')) {
+            e.target.closest('.content-block').remove();
+        }
+    });
+
+    // Drag and drop functionality
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.closest('.content-block')) {
+            dragSrcEl = e.target.closest('.content-block');
+            dragSrcEl.classList.add('dragging');
+        }
+    });
+
+    document.addEventListener('dragend', function(e) {
+        if (e.target.closest('.content-block')) {
+            e.target.classList.remove('dragging');
+            dragSrcEl = null;
+        }
+    });
+
+    document.addEventListener('dragover', function(e) {
+        e.preventDefault();
+    });
+
+    document.addEventListener('drop', function(e) {
+        e.preventDefault();
+        if (dragSrcEl && e.target.closest('.content-block')) {
+            const dropTarget = e.target.closest('.content-block');
+            if (dragSrcEl !== dropTarget) {
+                const contentBlocks = dropTarget.parentElement;
+                contentBlocks.insertBefore(dragSrcEl, dropTarget);
+            }
+        }
+    });
+
+    // Handle file uploads and video embeds
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('input[type="file"]')) {
+            const input = e.target;
+            const block = input.closest('.content-block');
+            const type = block.dataset.type;
+            
+            if (type === 'image') {
+                handleImageUpload(input);
+            } else if (type === 'file') {
+                handleFileUpload(input);
+            }
+        } else if (e.target.matches('input[type="text"]')) {
+            const input = e.target;
+            const block = input.closest('.content-block');
+            const type = block.dataset.type;
+            
+            if (type === 'video') {
+                handleVideoEmbed(input);
+            }
+        }
+    });
+
+    function handleImageUpload(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = input.closest('.content-block').querySelector('.image-preview');
+                preview.innerHTML = `<img src="${e.target.result}" alt="" class="max-w-full h-auto rounded">`;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function handleVideoEmbed(input) {
+        const embed = input.closest('.content-block').querySelector('.video-embed');
+        embed.innerHTML = input.value;
+    }
+
+    function handleFileUpload(input) {
+        if (input.files && input.files[0]) {
+            const preview = input.closest('.content-block').querySelector('.file-preview');
+            preview.innerHTML = `
+                <a href="#" target="_blank" class="flex items-center text-blue-600 hover:text-blue-800">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    ${input.files[0].name}
+                </a>
+            `;
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

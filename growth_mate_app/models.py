@@ -261,16 +261,56 @@ class StudentProgress(models.Model):
         return f"{self.user.get_full_name()} - {self.course.title} - {self.progress_percentage}%"
 
 class Lesson(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='lessons')
+    title = models.CharField(max_length=200)
     duration = models.IntegerField(help_text='Duration in minutes')
     order = models.IntegerField(default=0)
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order', 'created_at']
+        ordering = ['order']
 
     def __str__(self):
-        return f"{self.course.title} - {self.title}"
+        return f"{self.title} - {self.course.title}"
+
+class ContentBlock(models.Model):
+    CONTENT_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('file', 'File'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='content_blocks')
+    content_type = models.CharField(max_length=10, choices=CONTENT_TYPES)
+    content = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='lesson_content/%Y/%m/%d/', blank=True, null=True)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Content Block'
+        verbose_name_plural = 'Content Blocks'
+
+    def __str__(self):
+        return f"{self.get_content_type_display()} - {self.lesson.title}"
+
+    def save(self, *args, **kwargs):
+        # Delete old file if it exists and is being updated
+        if self.pk:
+            try:
+                old_instance = ContentBlock.objects.get(pk=self.pk)
+                if old_instance.file and self.file != old_instance.file:
+                    old_instance.file.delete(save=False)
+            except ContentBlock.DoesNotExist:
+                pass
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Delete file when the content block is deleted
+        if self.file:
+            self.file.delete(save=False)
+        super().delete(*args, **kwargs)
