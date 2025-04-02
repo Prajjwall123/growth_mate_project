@@ -36,6 +36,5 @@ urlpatterns = [
     path('enroll-course/<int:course_id>/', views.enroll_course, name='enroll_course'),
 ]
 
-# Serve media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
