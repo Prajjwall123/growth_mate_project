@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock, CourseProgress
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
@@ -1032,3 +1032,160 @@ def manage_lessons(request, course_id):
         'lessons': lessons,
     }
     return render(request, 'manager/manage_lessons.html', context)
+
+@login_required
+def course_details(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    
+    # Check if user is enrolled in this course
+    course.is_enrolled = Enrollment.objects.filter(
+        user=request.user,
+        course=course
+    ).exists()
+    
+    # Get completion status for lessons if user is enrolled
+    if course.is_enrolled:
+        # Get the course progress for this user
+        progress = CourseProgress.objects.filter(
+            user=request.user,
+            course=course
+        ).first()
+        
+        # Get all lessons for the course
+        lessons = course.lessons.all().order_by('order')
+        
+        # If there's progress, mark completed lessons
+        if progress:
+            completed_lessons = progress.completed_lessons.all().values_list('id', flat=True)
+            
+            # Mark completed lessons
+            for lesson in lessons:
+                lesson.is_completed = lesson.id in completed_lessons
+            
+            # Calculate completion rate
+            total_lessons = lessons.count()
+            completed_count = len(completed_lessons)
+            course.lesson_completion_rate = int((completed_count / total_lessons * 100) if total_lessons > 0 else 0)
+            
+            # Get or update StudentProgress for overall tracking
+            student_progress, _ = StudentProgress.objects.get_or_create(
+                user=request.user,
+                course=course
+            )
+            student_progress.progress_percentage = course.lesson_completion_rate
+            student_progress.save()
+        else:
+            # If no progress exists yet, initialize with all lessons as incomplete
+            for lesson in lessons:
+                lesson.is_completed = False
+            course.lesson_completion_rate = 0
+        
+        course.lessons_list = lessons
+    
+    context = {
+        'course': course,
+        'user_profile': request.user.userprofile,
+    }
+    return render(request, 'employee/course_details.html', context)
+
+@login_required
+def continue_course(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    enrollment = get_object_or_404(Enrollment, user=request.user, course=course)
+    
+    # Get the student's progress
+    progress = StudentProgress.objects.filter(
+        user=request.user,
+        course=course
+    ).first()
+    
+    if progress:
+        # Get completed lesson IDs
+        completed_lessons = progress.completed_lessons.all().values_list('id', flat=True)
+        # Find the first incomplete lesson
+        next_lesson = course.lessons.exclude(id__in=completed_lessons).order_by('order').first()
+    else:
+        # If no progress exists, start with the first lesson
+        next_lesson = course.lessons.order_by('order').first()
+    
+    if next_lesson:
+        return redirect('view_lesson', lesson_id=next_lesson.id)
+    else:
+        messages.warning(request, 'This course has no lessons yet.')
+        return redirect('course_details', course_id=course_id)
+
+@login_required
+def view_lesson(request, lesson_id):
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    course = lesson.course
+    
+    # Check if user is enrolled in the course
+    enrollment = get_object_or_404(Enrollment, user=request.user, course=course)
+    
+    # Get or create progress record
+    progress, created = CourseProgress.objects.get_or_create(
+        user=request.user,
+        course=course
+    )
+    
+    # Get all lessons for the course in order
+    all_lessons = list(course.lessons.order_by('order'))
+    current_lesson_index = all_lessons.index(lesson)
+    
+    # Get completed lessons
+    completed_lessons = progress.completed_lessons.all()
+    
+    # Check if previous lessons are completed
+    can_mark_complete = True
+    if current_lesson_index > 0:
+        previous_lesson = all_lessons[current_lesson_index - 1]
+        if previous_lesson not in completed_lessons:
+            can_mark_complete = False
+    
+    # Handle lesson completion
+    if request.method == 'POST' and 'mark_complete' in request.POST:
+        if can_mark_complete and lesson not in completed_lessons:
+            progress.completed_lessons.add(lesson)
+            
+            # Calculate new progress percentage
+            total_lessons = course.lessons.count()
+            completed_count = progress.completed_lessons.count()
+            
+            # Update StudentProgress for overall tracking
+            student_progress, _ = StudentProgress.objects.get_or_create(
+                user=request.user,
+                course=course
+            )
+            student_progress.progress_percentage = (completed_count / total_lessons) * 100
+            student_progress.save()
+            
+            # Update enrollment progress
+            enrollment.progress = student_progress.progress_percentage
+            if student_progress.progress_percentage == 100:
+                enrollment.completed = True
+                enrollment.completed_at = timezone.now()
+            enrollment.save()
+            
+            messages.success(request, 'Lesson marked as complete!')
+            
+            # If there are more lessons, redirect to the next one
+            if current_lesson_index < len(all_lessons) - 1:
+                next_lesson = all_lessons[current_lesson_index + 1]
+                return redirect('view_lesson', lesson_id=next_lesson.id)
+            else:
+                messages.success(request, 'Congratulations! You have completed the course!')
+                return redirect('course_details', course_id=course.id)
+    
+    # Get content blocks in order
+    content_blocks = lesson.content_blocks.order_by('order')
+    
+    context = {
+        'lesson': lesson,
+        'course': course,
+        'content_blocks': content_blocks,
+        'can_mark_complete': can_mark_complete,
+        'is_completed': lesson in completed_lessons,
+        'user_profile': request.user.userprofile,
+        'progress': progress,
+    }
+    return render(request, 'employee/view_lesson.html', context)
