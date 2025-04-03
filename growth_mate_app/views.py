@@ -902,111 +902,86 @@ def manage_lessons(request, course_id):
 
     if request.method == 'POST':
         try:
-            # Debug logging for POST data
             print("\n=== POST Request Data ===")
             print("POST data:", dict(request.POST))
             print("FILES data:", dict(request.FILES))
-            
-            # Handle lesson updates and deletions
-            lesson_ids = request.POST.getlist('lesson_ids[]')
-            lesson_deleted = request.POST.getlist('lesson_deleted[]')
+
+            # Get lesson data
             lesson_titles = request.POST.getlist('lesson_title[]')
             lesson_durations = request.POST.getlist('lesson_duration[]')
-            
+            lesson_ids = request.POST.getlist('lesson_ids[]') if 'lesson_ids[]' in request.POST else []
+            lesson_deleted = request.POST.getlist('lesson_deleted[]') if 'lesson_deleted[]' in request.POST else []
+
             print("\n=== Lesson Data ===")
-            print("Lesson IDs:", lesson_ids)
-            print("Lesson Deleted:", lesson_deleted)
-            print("Lesson Titles:", lesson_titles)
-            print("Lesson Durations:", lesson_durations)
-            
-            # Get existing lessons to preserve their IDs
-            existing_lessons = {str(lesson.id): lesson for lesson in course.lessons.all()}
-            print("\n=== Existing Lessons ===")
-            print("Existing lessons:", existing_lessons)
-            
-            # Process each lesson
-            for index, (lesson_id, is_deleted) in enumerate(zip(lesson_ids, lesson_deleted)):
-                print(f"\n=== Processing Lesson {index + 1} ===")
-                print(f"Lesson ID: {lesson_id}")
-                print(f"Is Deleted: {is_deleted}")
-                
-                if is_deleted == 'true':
-                    # Delete the lesson if it exists
-                    if lesson_id in existing_lessons:
-                        print(f"Deleting lesson {lesson_id}")
-                        existing_lessons[lesson_id].delete()
-                    continue
-                
-                # Create or update lesson
-                if lesson_id in existing_lessons:
-                    print(f"Updating existing lesson {lesson_id}")
-                    lesson = existing_lessons[lesson_id]
-                    lesson.title = lesson_titles[index]
-                    lesson.duration = lesson_durations[index]
-                    lesson.order = index
-                    lesson.save()
-                else:
-                    print(f"Creating new lesson with title: {lesson_titles[index]}")
+            print(f"Titles: {lesson_titles}")
+            print(f"Durations: {lesson_durations}")
+            print(f"IDs: {lesson_ids}")
+            print(f"Deleted: {lesson_deleted}")
+
+            # Handle existing lessons
+            if lesson_ids:
+                existing_lessons = {str(lesson.id): lesson for lesson in course.lessons.all()}
+                for index, (lesson_id, is_deleted) in enumerate(zip(lesson_ids, lesson_deleted)):
+                    if lesson_id and lesson_id in existing_lessons:
+                        lesson = existing_lessons[lesson_id]
+                        if is_deleted == 'true':
+                            lesson.delete()
+                        else:
+                            lesson.title = lesson_titles[index]
+                            lesson.duration = lesson_durations[index]
+                            lesson.order = index
+                            lesson.save()
+
+            # Handle new lessons
+            for index, (title, duration) in enumerate(zip(lesson_titles, lesson_durations)):
+                # Create new lesson if no valid lesson_id exists at this index
+                if index >= len(lesson_ids) or not lesson_ids[index]:
                     lesson = Lesson.objects.create(
                         course=course,
-                        title=lesson_titles[index],
-                        duration=lesson_durations[index],
+                        title=title,
+                        duration=duration,
                         order=index
                     )
-                
-                # Handle content blocks for this lesson
-                content_blocks = request.POST.getlist(f'lesson_{lesson.id}_content_block_text[]')
-                content_types = request.POST.getlist(f'lesson_{lesson.id}_content_block_type[]')
-                content_files = request.FILES.getlist(f'lesson_{lesson.id}_content_block_file[]')
-                
-                print(f"\n=== Content Blocks for Lesson {lesson.id} ===")
-                print(f"Text blocks: {content_blocks}")
-                print(f"Content types: {content_types}")
-                print(f"Content files: {content_files}")
-                
-                # Delete existing content blocks for this lesson
-                lesson.content_blocks.all().delete()
-                
-                # Create new content blocks
-                for i in range(len(content_blocks)):
-                    if not content_blocks[i] and not content_files[i]:
-                        continue
-                        
-                    content_type = content_types[i]
-                    content = content_blocks[i]
-                    file = content_files[i] if i < len(content_files) else None
-                    
-                    print(f"\nCreating content block {i + 1}:")
-                    print(f"Type: {content_type}")
-                    print(f"Content: {content}")
-                    print(f"File: {file}")
-                    
-                    try:
-                        content_block = ContentBlock.objects.create(
-                            lesson=lesson,
-                            content_type=content_type,
-                            content=content if content_type in ['text', 'video'] else None,
-                            file=file if content_type in ['image', 'file'] else None,
-                            order=i
-                        )
-                        print(f"Content block created successfully: {content_block.id}")
-                    except Exception as e:
-                        print(f"Error creating content block: {str(e)}")
-                        raise
+                    print(f"\nCreated new lesson: {lesson.id}")
+
+                    # Handle content blocks
+                    content_blocks = request.POST.getlist('content_block_text[]')
+                    content_types = request.POST.getlist('lesson_undefined_content_block_type[]')
+                    content_files = request.FILES.getlist('lesson_undefined_content_block_file[]')
+
+                    print(f"\nContent blocks: {content_blocks}")
+                    print(f"Content types: {content_types}")
+                    print(f"Files: {content_files}")
+
+                    for i, content_type in enumerate(content_types):
+                        content = content_blocks[i] if i < len(content_blocks) else None
+                        file = content_files[i] if i < len(content_files) else None
+                        if content or file:
+                            try:
+                                content_block = ContentBlock.objects.create(
+                                    lesson=lesson,
+                                    content_type=content_type,
+                                    content=content,
+                                    file=file,
+                                    order=i
+                                )
+                                print(f"Created content block: {content_block.id}")
+                            except Exception as e:
+                                print(f"Error creating content block: {str(e)}")
 
             messages.success(request, 'Lessons updated successfully.')
             return redirect('course_form', course_id=course.id)
-            
-        except Exception as e:
-            print("\n=== Error in manage_lessons ===")
-            print("Error:", str(e))
-            messages.error(request, f'Error updating lessons: {str(e)}')
-            return redirect('manage_lessons', course_id=course.id)
 
-    # Order lessons by their order field
-    lessons = course.lessons.all().order_by('order')
-    
-    return render(request, 'manager/manage_lessons.html', {
-        'course': course,
-        'lessons': lessons,
-    })    
+        except Exception as e:
+            print(f"\nError in manage_lessons: {str(e)}")
+            messages.error(request, f'Error updating lessons: {str(e)}')
+            return redirect('course_form', course_id=course.id)
+
+    else:
+        # Handle GET request
+        lessons = course.lessons.all().order_by('order')
+        context = {
+            'course': course,
+            'lessons': lessons,
+        }
+        return render(request, 'manager/manage_lessons.html', context)
