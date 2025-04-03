@@ -208,6 +208,15 @@ let dragSrcEl = null;
 // Add form submission debug
 document.getElementById('lessons-form').addEventListener('submit', function(e) {
     console.log('Form submitted');
+    
+    // Update CKEditor content before form submission
+    ckEditors.forEach(editor => {
+        const textarea = editor.sourceElement;
+        if (textarea) {
+            textarea.value = editor.getData();
+        }
+    });
+    
     const formData = new FormData(this);
     for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
@@ -246,6 +255,14 @@ function initCKEditor(container) {
         })
         .then(editor => {
             ckEditors.push(editor);
+            
+            // Update the textarea value when editor content changes
+            editor.model.document.on('change:data', () => {
+                const textarea = editor.sourceElement;
+                if (textarea) {
+                    textarea.value = editor.getData();
+                }
+            });
         })
         .catch(error => {
             console.error(error);
