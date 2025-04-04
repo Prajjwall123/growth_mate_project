@@ -55,10 +55,10 @@
                         <div class="mb-4">
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-gray-600">Progress</span>
-                                <span class="text-orange-500">{{ course.completion_rate }}%</span>
+                                <span class="text-orange-500">{{ course.user_completion_rate }}%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: {{ course.completion_rate }}%"></div>
+                                <div class="bg-orange-500 h-2 rounded-full transition-all duration-300" style="width: {{ course.user_completion_rate }}%"></div>
                             </div>
                         </div>
                     </div>
@@ -67,9 +67,15 @@
                 <!-- Action Button (Outside clickable area) -->
                 <div class="px-6 pb-6">
                     {% if course.is_enrolled %}
-                        <a href="{% url 'continue_course' course.id %}" class="block w-full text-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            Continue Learning
-                        </a>
+                        {% if course.user_completion_rate == 100 %}
+                            <a href="{% url 'course_details' course.id %}" class="block w-full text-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                Relearn
+                            </a>
+                        {% else %}
+                            <a href="{% url 'continue_course' course.id %}" class="block w-full text-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                Continue Learning
+                            </a>
+                        {% endif %}
                     {% else %}
                         <a href="{% url 'enroll_course' course.id %}" class="block w-full text-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             Enroll Now
@@ -90,6 +96,18 @@
                 </div>
             </div>
             {% endfor %}
+        </div>
+
+        <!-- Browse More Courses Section -->
+        <div class="mt-12 text-center">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Want to Learn More?</h2>
+            <p class="text-gray-600 mb-6">Explore our collection of courses and expand your knowledge.</p>
+            <a href="{% url 'available_courses' %}" class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors duration-200">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                Browse Available Courses
+            </a>
         </div>
     </main>
 </div>

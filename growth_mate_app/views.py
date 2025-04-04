@@ -284,6 +284,47 @@ def my_courses(request):
     for course in courses:
         course.enrolled_students_count = course.enrollments.count()
         course.active_enrollments_count = course.enrollments.filter(completed=False).count()
+        
+        # Set is_enrolled attribute
+        course.is_enrolled = True  # Since we're already filtering for enrolled courses
+        
+        # Calculate actual progress based on completed lessons
+        if user_profile.role == 'employee':
+            # Get course progress
+            course_progress = CourseProgress.objects.filter(
+                user=request.user,
+                course=course
+            ).first()
+            
+            # Get total lessons count
+            total_lessons = course.lessons.count()
+            
+            if course_progress and total_lessons > 0:
+                # Calculate completion rate based on completed lessons
+                completed_count = course_progress.completed_lessons.count()
+                completion_rate = int((completed_count / total_lessons) * 100)
+                
+                # Update enrollment progress
+                enrollment = Enrollment.objects.get(user=request.user, course=course)
+                enrollment.progress = completion_rate
+                if completion_rate == 100:
+                    enrollment.completed = True
+                else:
+                    enrollment.completed = False
+                enrollment.save()
+                
+                # Update StudentProgress for overall tracking
+                student_progress, _ = StudentProgress.objects.get_or_create(
+                    user=request.user,
+                    course=course
+                )
+                student_progress.progress_percentage = completion_rate
+                student_progress.save()
+                
+                # Add completion rate to course object for template
+                course.user_completion_rate = completion_rate
+            else:
+                course.user_completion_rate = 0
     
     return render(request, template, {
         'courses': courses,
@@ -1093,15 +1134,15 @@ def continue_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     enrollment = get_object_or_404(Enrollment, user=request.user, course=course)
     
-    # Get the student's progress
-    progress = StudentProgress.objects.filter(
+    # Get the course progress
+    course_progress = CourseProgress.objects.filter(
         user=request.user,
         course=course
     ).first()
     
-    if progress:
+    if course_progress:
         # Get completed lesson IDs
-        completed_lessons = progress.completed_lessons.all().values_list('id', flat=True)
+        completed_lessons = course_progress.completed_lessons.all().values_list('id', flat=True)
         # Find the first incomplete lesson
         next_lesson = course.lessons.exclude(id__in=completed_lessons).order_by('order').first()
     else:
