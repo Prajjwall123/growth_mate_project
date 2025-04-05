@@ -37,7 +37,9 @@
                     </div>
                     <div class="flex items-baseline mt-2">
                         <span class="text-2xl font-bold">{{ total_users }}</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 12% from last month</span>
+                        <span class="ml-2 text-sm {% if user_growth > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {% if user_growth > 0 %}↑{% else %}↓{% endif %} {{ user_growth }}% from last month
+                        </span>
                     </div>
                 </div>
             </div>
@@ -55,7 +57,9 @@
                     </div>
                     <div class="flex items-baseline mt-2">
                         <span class="text-2xl font-bold">{{ total_courses }}</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 8% from last month</span>
+                        <span class="ml-2 text-sm {% if course_growth > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {% if course_growth > 0 %}↑{% else %}↓{% endif %} {{ course_growth }}% from last month
+                        </span>
                     </div>
                 </div>
             </div>
@@ -73,7 +77,7 @@
                     </div>
                     <div class="flex items-baseline mt-2">
                         <span class="text-2xl font-bold">{{ active_courses }}</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 5% from last month</span>
+                        <span class="ml-2 text-sm text-gray-500">of {{ total_courses }}</span>
                     </div>
                 </div>
             </div>
@@ -90,8 +94,10 @@
                         </span>
                     </div>
                     <div class="flex items-baseline mt-2">
-                        <span class="text-2xl font-bold">85%</span>
-                        <span class="ml-2 text-sm text-green-500">↑ 3% from last month</span>
+                        <span class="text-2xl font-bold">{{ course_completion }}%</span>
+                        <span class="ml-2 text-sm {% if completion_growth > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {% if completion_growth > 0 %}↑{% else %}↓{% endif %} {{ completion_growth }}% from last month
+                        </span>
                     </div>
                 </div>
             </div>
@@ -134,7 +140,7 @@
             </div>
             <div class="p-6">
                 <div class="space-y-4">
-                    {% for course in course_completion %}
+                    {% for course in course_completion_data %}
                     <div>
                         <div class="flex justify-between mb-1">
                             <span class="text-sm font-medium text-gray-900">{{ course.title }}</span>

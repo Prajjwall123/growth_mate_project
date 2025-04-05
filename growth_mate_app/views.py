@@ -233,32 +233,42 @@ def manager_dashboard(request):
     today_stats.save()
 
     # Get top students based on progress
-    top_students = StudentProgress.objects.filter(
+    top_students = []
+    student_progress_records = StudentProgress.objects.filter(
         course__instructor=request.user
     ).select_related('user').order_by('-progress_percentage')[:5]
+    
+    for record in student_progress_records:
+        top_students.append({
+            'name': record.user.get_full_name() or record.user.username,
+            'progress': record.progress_percentage
+        })
 
     # Get course completion data
     courses = Course.objects.filter(instructor=request.user)
     course_completion_data = []
     for course in courses:
+        # Calculate completion rate for this course
+        course_enrollments = course.enrollments.count()
+        completed_enrollments = course.enrollments.filter(completed=True).count()
+        completion_rate = round((completed_enrollments / course_enrollments * 100) if course_enrollments > 0 else 0, 2)
+        
         course_completion_data.append({
             'title': course.title,
-            'completion_rate': course.completion_rate
+            'progress': completion_rate
         })
 
     context = {
         'user_profile': user_profile,
-        'stats': {
-            'total_users': total_users,
-            'active_users': active_users,
-            'inactive_users': inactive_users,
-            'total_courses': total_courses,
-            'active_courses': active_courses,
-            'course_completion': course_completion,
-            'user_growth': user_growth,
-            'course_growth': course_growth,
-            'completion_growth': completion_growth
-        },
+        'total_users': total_users,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'course_completion': course_completion,
+        'user_growth': user_growth,
+        'course_growth': course_growth,
+        'completion_growth': completion_growth,
         'top_students': top_students,
         'course_completion_data': course_completion_data
     }
