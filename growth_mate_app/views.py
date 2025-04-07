@@ -27,6 +27,8 @@ from social_core.exceptions import MissingBackend
 from django.db.models import Q
 from collections import defaultdict
 import logging
+from openpyxl import Workbook
+from django.http import HttpResponse
 
 
 otp_storage = {}
@@ -580,16 +582,68 @@ def users_view(request):
     elif status_filter == 'inactive':
         employees = employees.filter(is_active=False)
 
+    # Get manager's courses
+    manager_courses = Course.objects.filter(instructor=request.user)
+    
     # Calculate statistics
     total_users = User.objects.filter(userprofile__role='employee').count()
     active_users = User.objects.filter(userprofile__role='employee', is_active=True).count()
     inactive_users = total_users - active_users
 
-    # Calculate average course completion rate
-    enrollments = Enrollment.objects.filter(user__userprofile__role='employee')
-    total_enrollments = enrollments.count()
-    completed_enrollments = enrollments.filter(completed=True).count()
-    course_completion = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+    # Calculate course completion rate based on all enrolled users' progress
+    total_progress = 0
+    total_enrollments = 0
+    
+    for course in manager_courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    enrollment_progress = (completed_lessons / total_lessons) * 100
+                    total_progress += enrollment_progress
+                    total_enrollments += 1
+    
+    course_completion = round(total_progress / total_enrollments, 2) if total_enrollments > 0 else 0
+
+    # Get user activity data (last completed lessons)
+    user_activities = []
+    for employee in employees:
+        # Get the most recent course progress for this employee
+        last_completion = CourseProgress.objects.filter(
+            user=employee,
+            course__in=manager_courses,
+            completed_lessons__isnull=False
+        ).order_by('-last_accessed').first()
+        
+        if last_completion:
+            # Get the most recently completed lesson for this course
+            last_lesson = last_completion.completed_lessons.first()
+            if last_lesson:
+                user_activities.append({
+                    'user': employee,
+                    'lesson': last_lesson,
+                    'course': last_lesson.course,
+                    'completed_at': last_completion.last_accessed
+                })
+    
+    # Sort activities by completion date
+    user_activities.sort(key=lambda x: x['completed_at'], reverse=True)
+
+    # Get course distribution data
+    course_distribution = []
+    for course in manager_courses:
+        enrollment_count = course.enrollments.count()
+        course_distribution.append({
+            'title': course.title,
+            'count': enrollment_count
+        })
 
     # Paginate the results
     paginator = Paginator(employees, 10)  # Show 10 users per page
@@ -603,9 +657,18 @@ def users_view(request):
     # Get additional user data
     for employee in employees:
         # Get enrolled courses count
-        employee.enrolled_courses_count = Enrollment.objects.filter(user=employee).count()
+        employee.enrolled_courses_count = Enrollment.objects.filter(
+            user=employee,
+            course__in=manager_courses
+        ).count()
+        
         # Get completed courses count
-        employee.completed_courses_count = Enrollment.objects.filter(user=employee, completed=True).count()
+        employee.completed_courses_count = Enrollment.objects.filter(
+            user=employee,
+            course__in=manager_courses,
+            completed=True
+        ).count()
+        
         # Get last login
         employee.last_login = employee.last_login.strftime('%Y-%m-%d %H:%M') if employee.last_login else 'Never'
 
@@ -621,6 +684,8 @@ def users_view(request):
         'search_query': search_query,
         'status_filter': status_filter,
         'page_obj': employees,
+        'user_activities': user_activities[:10],  # Show last 10 activities
+        'course_distribution': course_distribution
     }
     
     return render(request, 'manager/users.html', context)
@@ -857,19 +922,54 @@ def manager_courses(request):
         'completion_rate': 0
     }
     
-    # Calculate completion rate
-    total_enrollments = Enrollment.objects.filter(course__in=courses).count()
-    if total_enrollments > 0:
-        completed_enrollments = Enrollment.objects.filter(
-            course__in=courses,
-            completed=True
-        ).count()
-        stats['completion_rate'] = round((completed_enrollments / total_enrollments) * 100, 1)
+    # Calculate overall completion rate for stats
+    total_progress = 0
+    total_enrollments = 0
+    
+    for course in courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    enrollment_progress = (completed_lessons / total_lessons) * 100
+                    total_progress += enrollment_progress
+                    total_enrollments += 1
+    
+    stats['completion_rate'] = round(total_progress / total_enrollments, 2) if total_enrollments > 0 else 0
     
     # Add additional course data
     for course in courses:
         course.enrolled_students_count = course.enrollments.count()
         course.active_enrollments_count = course.enrollments.filter(completed=False).count()
+        
+        # Calculate course-specific lesson completion rate
+        course_total_progress = 0
+        course_total_enrollments = 0
+        
+        enrollments = course.enrollments.all()
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    enrollment_progress = (completed_lessons / total_lessons) * 100
+                    course_total_progress += enrollment_progress
+                    course_total_enrollments += 1
+        
+        # Use a temporary attribute instead of completion_rate
+        course.avg_lesson_completion_rate = round(course_total_progress / course_total_enrollments, 2) if course_total_enrollments > 0 else 0
     
     # Pagination
     paginator = Paginator(courses, 10)
@@ -885,7 +985,6 @@ def manager_courses(request):
         'status_filter': status_filter,
     }
     return render(request, 'manager/courses.html', context)
-
 @login_required
 def course_form(request, course_id=None):
     # Check if user is a manager
@@ -1368,3 +1467,117 @@ def view_lesson(request, lesson_id):
         'progress': progress,
     }
     return render(request, 'employee/view_lesson.html', context)
+
+@login_required
+def export_users(request):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    # Get manager's courses
+    manager_courses = Course.objects.filter(instructor=request.user)
+    
+    # Create a new workbook and select the active sheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Users Progress"
+
+    # Add headers
+    headers = ['User', 'Email', 'Phone', 'Country', 'Status', 'Enrolled Courses', 'Completed Courses']
+    for col, header in enumerate(headers, 1):
+        ws.cell(row=1, column=col, value=header)
+
+    # Add course columns
+    course_col = len(headers) + 1
+    for course in manager_courses:
+        ws.cell(row=1, column=course_col, value=course.title)
+        course_col += 1
+
+    # Get all employees
+    employees = User.objects.filter(userprofile__role='employee')
+    
+    # Add user data
+    for row, employee in enumerate(employees, 2):
+        # Basic user info
+        ws.cell(row=row, column=1, value=employee.get_full_name())
+        ws.cell(row=row, column=2, value=employee.email)
+        ws.cell(row=row, column=3, value=employee.userprofile.phone)
+        ws.cell(row=row, column=4, value=employee.userprofile.country)
+        ws.cell(row=row, column=5, value='Active' if employee.is_active else 'Inactive')
+        
+        # Course counts
+        enrolled_count = Enrollment.objects.filter(
+            user=employee,
+            course__in=manager_courses
+        ).count()
+        completed_count = Enrollment.objects.filter(
+            user=employee,
+            course__in=manager_courses,
+            completed=True
+        ).count()
+        
+        ws.cell(row=row, column=6, value=enrolled_count)
+        ws.cell(row=row, column=7, value=completed_count)
+        
+        # Course progress
+        course_col = len(headers) + 1
+        for course in manager_courses:
+            progress = CourseProgress.objects.filter(
+                user=employee,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    progress_percentage = (completed_lessons / total_lessons) * 100
+                    ws.cell(row=row, column=course_col, value=f"{progress_percentage:.1f}%")
+                else:
+                    ws.cell(row=row, column=course_col, value="0%")
+            else:
+                ws.cell(row=row, column=course_col, value="Not Enrolled")
+            course_col += 1
+
+    # Create the HttpResponse
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=users_progress.xlsx'
+    
+    # Save the workbook
+    wb.save(response)
+    
+    return response
+
+@login_required
+def toggle_user_status(request, user_id):
+    # Check if the user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, "Access denied. Manager privileges required.")
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, "User profile not found.")
+        return redirect('home')
+
+    if request.method == 'POST':
+        try:
+            user = User.objects.get(id=user_id)
+            if user.userprofile.role == 'employee':
+                user.is_active = not user.is_active
+                user.save()
+                messages.success(request, f"User {user.get_full_name()} has been {'activated' if user.is_active else 'deactivated'}.")
+            else:
+                messages.error(request, "You can only toggle status for employees.")
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+    
+    return redirect('users')

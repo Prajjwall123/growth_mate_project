@@ -37,6 +37,9 @@ urlpatterns = [
     path('courses/<int:course_id>/details/', views.course_details, name='course_details'),
     path('courses/<int:course_id>/continue/', views.continue_course, name='continue_course'),
     path('lessons/<int:lesson_id>/', views.view_lesson, name='view_lesson'),
+    path('users/', views.users_view, name='users'),
+    path('users/export/', views.export_users, name='export_users'),
+    path('users/toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
 ]
 
 if settings.DEBUG:
