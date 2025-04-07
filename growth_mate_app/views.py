@@ -16,7 +16,7 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Sum
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.hashers import make_password
@@ -202,15 +202,32 @@ def manager_dashboard(request):
     active_users = User.objects.filter(userprofile__role='employee', is_active=True).count()
     inactive_users = total_users - active_users
 
-    # Calculate course statistics
-    total_courses = Course.objects.filter(instructor=request.user).count()
-    active_courses = Course.objects.filter(instructor=request.user, is_active=True).count()
+    # Get manager's courses
+    manager_courses = Course.objects.filter(instructor=request.user)
+    total_courses = manager_courses.count()
+    active_courses = manager_courses.filter(is_active=True).count()
     
-    # Calculate course completion rate
-    enrollments = Enrollment.objects.filter(course__instructor=request.user)
-    total_enrollments = enrollments.count()
-    completed_enrollments = enrollments.filter(completed=True).count()
-    course_completion = round((completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0, 2)
+    # Calculate course completion rate based on all enrolled users' progress
+    total_progress = 0
+    total_enrollments = 0
+    
+    for course in manager_courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    enrollment_progress = (completed_lessons / total_lessons) * 100
+                    total_progress += enrollment_progress
+                    total_enrollments += 1
+    
+    course_completion = round(total_progress / total_enrollments, 2) if total_enrollments > 0 else 0
 
     # Calculate growth rates
     if last_month_stats:
@@ -235,7 +252,7 @@ def manager_dashboard(request):
     # Get top students based on progress
     top_students = []
     student_progress_records = StudentProgress.objects.filter(
-        course__instructor=request.user
+        course__in=manager_courses
     ).select_related('user').order_by('-progress_percentage')[:5]
     
     for record in student_progress_records:
@@ -244,20 +261,33 @@ def manager_dashboard(request):
             'progress': record.progress_percentage
         })
 
-    # Get course completion data
-    courses = Course.objects.filter(instructor=request.user)
+    # Get course completion data with progress for all enrolled users
     course_completion_data = []
-    for course in courses:
-        # Calculate completion rate for this course
-        course_enrollments = course.enrollments.count()
-        completed_enrollments = course.enrollments.filter(completed=True).count()
-        completion_rate = round((completed_enrollments / course_enrollments * 100) if course_enrollments > 0 else 0, 2)
+    for course in manager_courses:
+        enrollments = Enrollment.objects.filter(course=course)
+        total_course_progress = 0
+        total_course_enrollments = 0
         
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress:
+                total_lessons = course.lessons.count()
+                if total_lessons > 0:
+                    completed_lessons = progress.completed_lessons.count()
+                    enrollment_progress = (completed_lessons / total_lessons) * 100
+                    total_course_progress += enrollment_progress
+                    total_course_enrollments += 1
+        
+        course_progress = round(total_course_progress / total_course_enrollments, 2) if total_course_enrollments > 0 else 0
         course_completion_data.append({
             'title': course.title,
-            'progress': completion_rate
+            'progress': course_progress
         })
-
+    
     context = {
         'user_profile': user_profile,
         'total_users': total_users,
@@ -674,8 +704,106 @@ def employee_dashboard(request):
         messages.error(request, "User profile not found.")
         return redirect('home')
 
+    # Get enrolled courses
+    enrolled_courses = Course.objects.filter(
+        enrollments__user=request.user
+    ).order_by('-created_at')
+    
+    # Calculate overall progress based on lesson completion across all courses
+    total_progress = 0
+    courses_with_progress = 0
+    
+    for course in enrolled_courses:
+        progress = CourseProgress.objects.filter(
+            user=request.user,
+            course=course
+        ).first()
+        
+        if progress:
+            total_lessons = course.lessons.count()
+            if total_lessons > 0:
+                completed_lessons = progress.completed_lessons.count()
+                course_progress = (completed_lessons / total_lessons) * 100
+                total_progress += course_progress
+                courses_with_progress += 1
+    
+    overall_progress = round(total_progress / courses_with_progress, 2) if courses_with_progress > 0 else 0
+    
+    # Get active courses (not completed)
+    active_courses = enrolled_courses.filter(enrollments__user=request.user, enrollments__completed=False).count()
+    
+    # Calculate learning time (sum of course durations)
+    total_learning_time = enrolled_courses.aggregate(total_time=Sum('duration'))['total_time'] or 0
+    learning_time_hours = round(total_learning_time / 60, 1)  # Convert minutes to hours
+    
+    # Get recent course completions for achievements
+    recent_completions = Enrollment.objects.filter(
+        user=request.user,
+        completed=True,
+        completed_at__gte=timezone.now() - timezone.timedelta(days=30)
+    ).count()
+    
+    # Get course progress data for the summary section
+    course_progress_data = []
+    for course in enrolled_courses[:5]:  # Get top 5 courses
+        progress = CourseProgress.objects.filter(
+            user=request.user,
+            course=course
+        ).first()
+        
+        if progress:
+            total_lessons = course.lessons.count()
+            if total_lessons > 0:
+                completed_lessons = progress.completed_lessons.count()
+                progress_percentage = round((completed_lessons / total_lessons) * 100, 2)
+            else:
+                progress_percentage = 0
+        else:
+            progress_percentage = 0
+            
+        course_progress_data.append({
+            'title': course.title,
+            'progress': progress_percentage
+        })
+    
+    # Get next session (next incomplete lesson)
+    next_lesson = None
+    for course in enrolled_courses:
+        progress = CourseProgress.objects.filter(
+            user=request.user,
+            course=course
+        ).first()
+        
+        if progress:
+            completed_lessons = progress.completed_lessons.all()
+            next_lesson = course.lessons.exclude(id__in=completed_lessons).order_by('order').first()
+            if next_lesson:
+                break
+    
+    # Get pending tasks (incomplete lessons)
+    pending_tasks = 0
+    for course in enrolled_courses:
+        progress = CourseProgress.objects.filter(
+            user=request.user,
+            course=course
+        ).first()
+        
+        if progress:
+            total_lessons = course.lessons.count()
+            completed_lessons = progress.completed_lessons.count()
+            pending_tasks += (total_lessons - completed_lessons)
+    
     context = {
         'user_profile': user_profile,
+        'overall_progress': overall_progress,
+        'total_courses': enrolled_courses.count(),
+        'completed_courses': enrolled_courses.filter(enrollments__user=request.user, enrollments__completed=True).count(),
+        'active_courses': active_courses,
+        'learning_time_hours': learning_time_hours,
+        'recent_completions': recent_completions,
+        'course_progress_data': course_progress_data,
+        'next_lesson': next_lesson,
+        'pending_tasks': pending_tasks,
     }
     return render(request, 'employee/dashboard.html', context)
 
