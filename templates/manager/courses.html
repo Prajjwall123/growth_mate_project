@@ -156,8 +156,8 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{% url 'edit_course' course.id %}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                            <a href="{% url 'delete_course' course.id %}" class="text-red-600 hover:text-red-900">Delete</a>
+                            <a href="{% url 'edit_course' course.id %}" class="text-white bg-indigo-500 px-2 py-1 rounded-md mr-3">Edit</a>
+                            <button onclick="confirmDeleteCourse({{ course.id }}, '{{ course.title }}')" class="text-white bg-red-500 px-2 py-1 rounded-md">Delete</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -217,4 +217,87 @@
         {% endif %}
     </main>
 </div>
+
+<!-- Delete Course Confirmation Modal -->
+<div id="deleteCourseModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Delete Course</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to delete <span id="courseTitle" class="font-semibold"></span>? This action cannot be undone.</p>
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeDeleteModal()" class="px-4 py-2 text-gray-700 hover:text-gray-900">
+                Cancel
+            </button>
+            <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let courseIdToDelete = null;
+    
+    function confirmDeleteCourse(courseId, courseTitle) {
+        courseIdToDelete = courseId;
+        document.getElementById('courseTitle').textContent = courseTitle;
+        document.getElementById('deleteCourseModal').classList.remove('hidden');
+        document.getElementById('deleteCourseModal').classList.add('flex');
+    }
+    
+    function closeDeleteModal() {
+        document.getElementById('deleteCourseModal').classList.add('hidden');
+        document.getElementById('deleteCourseModal').classList.remove('flex');
+        courseIdToDelete = null;
+    }
+    
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (courseIdToDelete) {
+            // Send AJAX request to delete the course
+            fetch(`/manager/courses/${courseIdToDelete}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show updated course list
+                    window.location.reload();
+                } else {
+                    alert('Error deleting course: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the course.');
+            });
+        }
+        closeDeleteModal();
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('deleteCourseModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeDeleteModal();
+        }
+    });
+    
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
 {% endblock %} 

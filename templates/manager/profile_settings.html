@@ -153,5 +153,19 @@
             this.form.submit();
         });
     });
+    
+    // Make sure the profile picture click works
+    document.addEventListener('DOMContentLoaded', function() {
+        const profilePictureContainer = document.querySelector('.group');
+        if (profilePictureContainer) {
+            profilePictureContainer.addEventListener('click', function(e) {
+                // Find the file input within this container
+                const fileInput = this.querySelector('input[type="file"]');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

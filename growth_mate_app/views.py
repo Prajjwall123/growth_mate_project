@@ -1212,14 +1212,21 @@ def delete_course(request, course_id):
     if request.method == 'POST':
         course.delete()
         messages.success(request, 'Course deleted successfully.')
-        return redirect('manager_courses')
+        return JsonResponse({'success': True, 'message': 'Course deleted successfully.'})
     
-    context = {
-        'user_profile': user_profile,
-        'course': course,
-    }
+    # If it's an AJAX request but not POST, return course details for the modal
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'course': {
+                'id': course.id,
+                'title': course.title,
+                'description': course.description
+            }
+        })
     
-    return render(request, 'manager/delete_course.html', context)
+    # For non-AJAX GET requests, redirect to courses page
+    return redirect('manager_courses')
 
 @login_required
 def enroll_course(request, course_id):
