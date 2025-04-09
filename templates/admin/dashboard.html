@@ -6,8 +6,8 @@
 {% block admin_content %}
 <!-- Welcome Section -->
 <div class="mb-8">
-    <h1 class="text-2xl font-semibold text-gray-800">Welcome Back, Admin!</h1>
-    <p class="text-gray-600">See what happened with your courses and students</p>
+    <h1 class="text-2xl font-semibold text-gray-800">Welcome Back, {{ user.get_full_name }}!</h1>
+    <p class="text-gray-600">Here's what's happening with your platform</p>
 </div>
 
 <!-- Stats Cards -->
@@ -17,10 +17,10 @@
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-gray-500 mb-2">Total Users</h3>
-                <p class="text-2xl font-semibold">324</p>
+                <p class="text-2xl font-semibold">{{ total_users }}</p>
                 <p class="text-green-500 text-sm mt-2">
                     <i class="fas fa-arrow-up mr-1"></i>
-                    +9% from last month
+                    +{{ user_growth }} new this month
                 </p>
             </div>
             <div class="bg-orange-100 p-3 rounded-lg">
@@ -29,19 +29,35 @@
         </div>
     </div>
 
-    <!-- Active Users -->
+    <!-- Active Managers -->
     <div class="bg-white rounded-lg p-6 shadow-sm">
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="text-gray-500 mb-2">Active Users</h3>
-                <p class="text-2xl font-semibold">65</p>
-                <p class="text-green-500 text-sm mt-2">
-                    <i class="fas fa-arrow-up mr-1"></i>
-                    +12% from last month
+                <h3 class="text-gray-500 mb-2">Active Managers</h3>
+                <p class="text-2xl font-semibold">{{ active_managers }}</p>
+                <p class="text-gray-500 text-sm mt-2">
+                    Managing platform courses
                 </p>
             </div>
             <div class="bg-green-100 p-3 rounded-lg">
-                <i class="fas fa-user-check text-green-500 text-xl"></i>
+                <i class="fas fa-user-tie text-green-500 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Stats -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-gray-500 mb-2">Total Courses</h3>
+                <p class="text-2xl font-semibold">{{ total_courses }}</p>
+                <p class="text-green-500 text-sm mt-2">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    +{{ course_growth }} new this month
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-lg">
+                <i class="fas fa-graduation-cap text-blue-500 text-xl"></i>
             </div>
         </div>
     </div>
@@ -51,27 +67,9 @@
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-gray-500 mb-2">Course Completion</h3>
-                <p class="text-2xl font-semibold">78%</p>
-                <p class="text-green-500 text-sm mt-2">
-                    <i class="fas fa-arrow-up mr-1"></i>
-                    +5% from last month
-                </p>
-            </div>
-            <div class="bg-blue-100 p-3 rounded-lg">
-                <i class="fas fa-graduation-cap text-blue-500 text-xl"></i>
-            </div>
-        </div>
-    </div>
-
-    <!-- Student Engagement -->
-    <div class="bg-white rounded-lg p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-            <div>
-                <h3 class="text-gray-500 mb-2">Student Engagement</h3>
-                <p class="text-2xl font-semibold">87%</p>
-                <p class="text-green-500 text-sm mt-2">
-                    <i class="fas fa-arrow-up mr-1"></i>
-                    +7% from last month
+                <p class="text-2xl font-semibold">{{ course_completion_rate|floatformat:1 }}%</p>
+                <p class="text-gray-500 text-sm mt-2">
+                    Average completion rate
                 </p>
             </div>
             <div class="bg-yellow-100 p-3 rounded-lg">
@@ -83,27 +81,27 @@
 
 <!-- Popular Courses & Recent Activities -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <!-- Popular Courses -->
+    <!-- Course Status -->
     <div class="bg-white rounded-lg p-6 shadow-sm">
-        <h3 class="text-lg font-semibold mb-4">Popular Courses</h3>
+        <h3 class="text-lg font-semibold mb-4">Course Status</h3>
         <div class="space-y-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <span class="text-gray-600">Web Development</span>
+                    <span class="text-gray-600">Active Courses</span>
                 </div>
-                <span class="text-gray-500">245 students</span>
+                <span class="text-gray-500">{{ active_courses }}</span>
             </div>
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <span class="text-gray-600">Data Science</span>
+                    <span class="text-gray-600">Featured Courses</span>
                 </div>
-                <span class="text-gray-500">198 students</span>
+                <span class="text-gray-500">{{ featured_courses }}</span>
             </div>
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <span class="text-gray-600">Mobile Development</span>
+                    <span class="text-gray-600">Total Courses</span>
                 </div>
-                <span class="text-gray-500">167 students</span>
+                <span class="text-gray-500">{{ total_courses }}</span>
             </div>
         </div>
     </div>
@@ -112,100 +110,57 @@
     <div class="bg-white rounded-lg p-6 shadow-sm">
         <h3 class="text-lg font-semibold mb-4">Recent Activities</h3>
         <div class="space-y-4">
+            {% for activity in recent_activities %}
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <span class="text-gray-600">New Course Added</span>
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                        {% if activity.user.userprofile.profile_picture %}
+                            <img src="{{ activity.user.userprofile.profile_picture.url }}" alt="{{ activity.user.get_full_name }}" class="w-8 h-8 rounded-full object-cover">
+                        {% else %}
+                            <span class="text-sm text-gray-600">{{ activity.user.get_initials }}</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-900">{{ activity.user.get_full_name }}</p>
+                        <p class="text-xs text-gray-500">{{ activity.description }}</p>
+                    </div>
                 </div>
-                <span class="text-gray-500">5 mins ago</span>
+                <span class="text-xs text-gray-500">{{ activity.created_at|timesince }} ago</span>
             </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <span class="text-gray-600">Student Enrollment</span>
-                </div>
-                <span class="text-gray-500">2 hours ago</span>
-            </div>
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <span class="text-gray-600">Course Completed</span>
-                </div>
-                <span class="text-gray-500">1 day ago</span>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- System Status -->
+<!-- Latest Users -->
 <div class="bg-white rounded-lg p-6 shadow-sm">
-    <h3 class="text-lg font-semibold mb-4">System Status</h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="flex justify-between items-center">
-            <span class="text-gray-600">Server Uptime</span>
-            <span class="text-green-500">99.9%</span>
-        </div>
-        <div class="flex justify-between items-center">
-            <span class="text-gray-600">Response Time</span>
-            <span class="text-green-500">0.2s</span>
-        </div>
-        <div class="flex justify-between items-center">
-            <span class="text-gray-600">Storage Used</span>
-            <span class="text-yellow-500">75%</span>
-        </div>
-    </div>
-</div>
-
-<!-- Learner Progress Report -->
-<div class="mt-8 bg-white rounded-lg p-6 shadow-sm">
     <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-semibold">Learner Progress Report</h3>
-        <select class="border rounded-lg px-4 py-2 text-gray-600">
-            <option>Top performers</option>
-        </select>
+        <h3 class="text-lg font-semibold">Latest Users</h3>
+        <a href="{% url 'admin_users' %}" class="text-orange-500 hover:text-orange-600">View All</a>
     </div>
     <div class="space-y-6">
+        {% for user_profile in latest_users %}
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
-                <span class="text-gray-700">Michael Chen</span>
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    {% if user_profile.profile_picture %}
+                        <img src="{{ user_profile.profile_picture.url }}" alt="{{ user_profile.user.get_full_name }}" class="w-10 h-10 rounded-full object-cover">
+                    {% else %}
+                        <span class="text-gray-600">{{ user_profile.user.get_initials }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-900">{{ user_profile.user.get_full_name }}</p>
+                    <p class="text-xs text-gray-500">{{ user_profile.role|title }}</p>
+                </div>
             </div>
             <div class="flex items-center">
-                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
-                    <div class="bg-orange-500 h-2 rounded-full" style="width: 85%"></div>
-                </div>
-                <span class="text-gray-600">85%</span>
+                <span class="px-3 py-1 text-xs rounded-full {% if user_profile.user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ user_profile.user.is_active|yesno:"Active,Inactive" }}
+                </span>
             </div>
         </div>
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <span class="text-gray-700">Emily Wilson</span>
-            </div>
-            <div class="flex items-center">
-                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
-                    <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
-                </div>
-                <span class="text-gray-600">65%</span>
-            </div>
-        </div>
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <span class="text-gray-700">Sarah Johnson</span>
-            </div>
-            <div class="flex items-center">
-                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
-                    <div class="bg-orange-500 h-2 rounded-full" style="width: 95%"></div>
-                </div>
-                <span class="text-gray-600">95%</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Active Courses -->
-<div class="mt-8 bg-white rounded-lg p-6 shadow-sm">
-    <div class="flex justify-between items-center">
-        <div>
-            <h3 class="text-lg font-semibold">Active Courses</h3>
-            <p class="text-4xl font-bold mt-2">92</p>
-        </div>
-        <span class="text-green-500">+8 new</span>
+        {% endfor %}
     </div>
 </div>
 

@@ -1627,10 +1627,30 @@ def admin_dashboard(request):
     active_courses = Course.objects.filter(is_active=True).count()
     featured_courses = Course.objects.filter(is_featured=True).count()
     
-    # Calculate course completion rate
-    total_enrollments = Enrollment.objects.count()
-    completed_enrollments = Enrollment.objects.filter(completed=True).count()
-    course_completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+    # Calculate course completion rate - average across all courses and users
+    total_completion_percentage = 0
+    total_enrollments = 0
+    
+    # Get all courses
+    courses = Course.objects.all()
+    for course in courses:
+        # Get all enrollments for this course
+        enrollments = Enrollment.objects.filter(course=course)
+        for enrollment in enrollments:
+            progress = CourseProgress.objects.filter(
+                user=enrollment.user,
+                course=course
+            ).first()
+            
+            if progress and course.lessons.count() > 0:
+                completed_lessons = progress.completed_lessons.count()
+                total_lessons = course.lessons.count()
+                completion_percentage = (completed_lessons / total_lessons) * 100
+                total_completion_percentage += completion_percentage
+                total_enrollments += 1
+    
+    # Calculate average completion rate
+    course_completion_rate = (total_completion_percentage / total_enrollments) if total_enrollments > 0 else 0
     
     # Get recent activities
     recent_activities = Activity.objects.select_related('user', 'course').order_by('-created_at')[:10]
@@ -1646,7 +1666,7 @@ def admin_dashboard(request):
         'active_managers': active_managers,
         'active_courses': active_courses,
         'featured_courses': featured_courses,
-        'course_completion_rate': course_completion_rate,
+        'course_completion_rate': round(course_completion_rate, 1),
         'recent_activities': recent_activities,
         'latest_users': latest_users,
     }
@@ -1655,8 +1675,144 @@ def admin_dashboard(request):
 
 @user_passes_test(is_admin)
 def admin_users(request):
+    # Get query parameters
+    search_query = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    status_filter = request.GET.get('status', '')
+    sort_by = request.GET.get('sort', 'name')  # Default sort by name
+    sort_order = request.GET.get('order', 'asc')  # Default ascending order
+    page = request.GET.get('page', 1)
+
+    # Base queryset
     users = UserProfile.objects.select_related('user').all()
-    return render(request, 'admin/users.html', {'users': users})
+
+    # Apply search filter
+    if search_query:
+        users = users.filter(
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__email__icontains=search_query)
+        )
+
+    # Apply role filter
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    # Apply status filter
+    if status_filter:
+        is_active = status_filter == 'active'
+        users = users.filter(user__is_active=is_active)
+
+    # Apply sorting
+    sort_field = {
+        'name': 'user__first_name',
+        'email': 'user__email',
+        'role': 'role',
+        'status': 'user__is_active',
+        'joined': 'user__date_joined'
+    }.get(sort_by, 'user__first_name')
+
+    if sort_order == 'desc':
+        sort_field = f'-{sort_field}'
+    users = users.order_by(sort_field)
+
+    # Pagination
+    paginator = Paginator(users, 10)  # Show 10 users per page
+    try:
+        users_page = paginator.page(page)
+    except PageNotAnInteger:
+        users_page = paginator.page(1)
+    except EmptyPage:
+        users_page = paginator.page(paginator.num_pages)
+
+    # Get quick stats
+    total_users = UserProfile.objects.count()
+    active_users = UserProfile.objects.filter(user__is_active=True).count()
+    inactive_users = total_users - active_users
+    
+    # Calculate percentages
+    active_percentage = round((active_users / total_users * 100) if total_users > 0 else 0)
+    inactive_percentage = round((inactive_users / total_users * 100) if total_users > 0 else 0)
+
+    # Calculate user growth
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    new_users = UserProfile.objects.filter(user__date_joined__gte=thirty_days_ago).count()
+    user_growth = round((new_users / total_users * 100) if total_users > 0 else 0)
+
+    # Calculate course completion rate
+    total_completion_percentage = 0
+    total_enrollments = 0
+    completed_courses = 0
+    
+    enrollments = Enrollment.objects.all()
+    for enrollment in enrollments:
+        if enrollment.completed:
+            completed_courses += 1
+        progress = CourseProgress.objects.filter(
+            user=enrollment.user,
+            course=enrollment.course
+        ).first()
+        
+        if progress and enrollment.course.lessons.count() > 0:
+            completed_lessons = progress.completed_lessons.count()
+            total_lessons = enrollment.course.lessons.count()
+            completion_percentage = (completed_lessons / total_lessons) * 100
+            total_completion_percentage += completion_percentage
+            total_enrollments += 1
+    
+    course_completion_rate = round(total_completion_percentage / total_enrollments if total_enrollments > 0 else 0)
+
+    context = {
+        'users': users_page,
+        'total_users': total_users,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+        'active_percentage': active_percentage,
+        'inactive_percentage': inactive_percentage,
+        'user_growth': user_growth,
+        'course_completion_rate': course_completion_rate,
+        'completed_courses': completed_courses,
+        'search_query': search_query,
+        'role_filter': role_filter,
+        'status_filter': status_filter,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+        'role_choices': UserProfile.ROLE_CHOICES,
+    }
+    return render(request, 'admin/users.html', context)
+
+@user_passes_test(is_admin)
+def update_user_role(request, user_id):
+    if request.method == 'POST':
+        try:
+            user = User.objects.get(id=user_id)
+            user_profile = user.userprofile
+            new_role = request.POST.get('role')
+            if new_role in dict(UserProfile.ROLE_CHOICES):
+                user_profile.role = new_role
+                user_profile.save()
+                messages.success(request, f'Role updated successfully for {user.get_full_name()}')
+            else:
+                messages.error(request, 'Invalid role selected')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found')
+    return redirect('admin_users')
+
+@user_passes_test(is_admin)
+def delete_user(request, user_id):
+    if request.method == 'POST':
+        try:
+            user_profile = UserProfile.objects.get(id=user_id)
+            user = user_profile.user
+            # Don't allow deleting superusers
+            if not user.is_superuser:
+                user.delete()  # This will also delete the UserProfile due to CASCADE
+                messages.success(request, f'User {user.get_full_name()} has been deleted')
+            else:
+                messages.error(request, 'Cannot delete superuser accounts')
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'User not found')
+    return redirect('admin_users')
 
 @user_passes_test(is_admin)
 def add_user(request):
