@@ -522,7 +522,7 @@ def profile_settings(request):
         request.user.save()
 
         # Update profile fields
-        if user_profile.role == 'manager':
+        if user_profile.role in ['manager', 'admin']:
             user_profile.professional_headline = request.POST.get('professional_headline', user_profile.professional_headline)
         user_profile.bio = request.POST.get('bio', user_profile.bio)
         user_profile.phone = request.POST.get('phone', user_profile.phone)
@@ -535,23 +535,19 @@ def profile_settings(request):
         current_password = request.POST.get('current_password')
         if current_password:
             if request.user.check_password(current_password):
-                # For employees, handle complete password change
-                if user_profile.role == 'employee':
-                    new_password = request.POST.get('new_password')
-                    confirm_password = request.POST.get('confirm_password')
-                    if new_password and confirm_password:
-                        if new_password == confirm_password:
-                            request.user.set_password(new_password)
-                            request.user.save()
-                            messages.success(request, 'Profile and password updated successfully.')
-                            # Re-authenticate the user to prevent logout
-                            update_session_auth_hash(request, request.user)
-                        else:
-                            messages.error(request, 'New passwords do not match.')
-                    elif new_password or confirm_password:
-                        messages.error(request, 'Please provide both new password and confirmation.')
-                else:
-                    messages.success(request, 'Profile updated successfully.')
+                new_password = request.POST.get('new_password')
+                confirm_password = request.POST.get('confirm_password')
+                if new_password and confirm_password:
+                    if new_password == confirm_password:
+                        request.user.set_password(new_password)
+                        request.user.save()
+                        messages.success(request, 'Profile and password updated successfully.')
+                        # Re-authenticate the user to prevent logout
+                        update_session_auth_hash(request, request.user)
+                    else:
+                        messages.error(request, 'New passwords do not match.')
+                elif new_password or confirm_password:
+                    messages.error(request, 'Please provide both new password and confirmation.')
             else:
                 messages.error(request, 'Current password is incorrect.')
         else:
@@ -564,7 +560,9 @@ def profile_settings(request):
     }
     
     # Use different templates based on user role
-    if user_profile.role == 'manager':
+    if user_profile.role == 'admin':
+        return render(request, 'admin/profile_settings.html', context)
+    elif user_profile.role == 'manager':
         return render(request, 'manager/profile_settings.html', context)
     else:
         return render(request, 'employee/profile_settings.html', context)
