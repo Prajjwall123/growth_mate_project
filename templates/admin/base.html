@@ -36,10 +36,10 @@
                 <i class="fas fa-question-circle mr-3"></i>
                 <span>Help Center</span>
             </a>
-            <a href="{% url 'logout' %}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500">
+            <button onclick="showLogoutConfirmation()" class="w-full flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500">
                 <i class="fas fa-sign-out-alt mr-3"></i>
                 <span>Logout</span>
-            </a>
+            </button>
         </nav>
     </div>
 
@@ -72,4 +72,41 @@
         </div>
     </div>
 </div>
+
+<!-- Logout Confirmation Modal -->
+<div id="logoutModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-8 shadow-xl max-w-sm w-full mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Confirm Logout</h3>
+        <p class="text-gray-600 mb-6">Are you sure you want to logout?</p>
+        <div class="flex justify-end space-x-4">
+            <button onclick="hideLogoutConfirmation()" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                Cancel
+            </button>
+            <a href="{% url 'logout' %}" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showLogoutConfirmation() {
+        const modal = document.getElementById('logoutModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function hideLogoutConfirmation() {
+        const modal = document.getElementById('logoutModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('logoutModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideLogoutConfirmation();
+        }
+    });
+</script>
 {% endblock %} 
