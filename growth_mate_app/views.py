@@ -1413,8 +1413,12 @@ def manage_lessons(request, course_id):
     context = {
         'course': course,
         'lessons': lessons,
+        'user_profile': user_profile,
     }
-    return render(request, 'manager/manage_lessons.html', context)
+    
+    # Use admin template for admin users, manager template for managers
+    template = 'admin/manage_lessons.html' if user_profile.role == 'admin' else 'manager/manage_lessons.html'
+    return render(request, template, context)
 
 @login_required
 def delete_lesson(request, course_id, lesson_id):
@@ -1911,20 +1915,22 @@ def update_user_role(request, user_id):
             messages.error(request, 'User not found')
     return redirect('admin_users')
 
-@user_passes_test(is_admin)
+@login_required
 def delete_user(request, user_id):
-    if request.method == 'POST':
-        try:
-            user_profile = UserProfile.objects.get(id=user_id)
-            user = user_profile.user
-            # Don't allow deleting superusers
-            if not user.is_superuser:
-                user.delete()  # This will also delete the UserProfile due to CASCADE
-                messages.success(request, f'User {user.get_full_name()} has been deleted')
-            else:
-                messages.error(request, 'Cannot delete superuser accounts')
-        except UserProfile.DoesNotExist:
-            messages.error(request, 'User not found')
+    if not request.user.userprofile.role == 'admin':
+        messages.error(request, 'You do not have permission to delete users.')
+        return redirect('admin_dashboard')
+    
+    try:
+        user = User.objects.get(id=user_id)
+        # Delete the user (this will cascade delete the UserProfile)
+        user.delete()
+        messages.success(request, f'User {user.get_full_name()} has been deleted successfully.')
+    except User.DoesNotExist:
+        messages.error(request, 'User not found.')
+    except Exception as e:
+        messages.error(request, f'Error deleting user: {str(e)}')
+    
     return redirect('admin_users')
 
 @user_passes_test(is_admin)
@@ -1942,17 +1948,18 @@ def add_user(request):
                 )
                 
                 # Update or create UserProfile
-                UserProfile.objects.update_or_create(
+                user_profile, created = UserProfile.objects.update_or_create(
                     user=user,
                     defaults={
                         'role': request.POST['role'],
                         'phone': request.POST.get('phone', ''),
+                        'gender': request.POST.get('gender', 'other'),
                     }
                 )
 
                 if 'photo' in request.FILES:
-                    user.userprofile.profile_picture = request.FILES['photo']
-                    user.userprofile.save()
+                    user_profile.profile_picture = request.FILES['photo']
+                    user_profile.save()
 
                 messages.success(request, 'User created successfully!')
                 return redirect('admin_users')
@@ -1963,10 +1970,14 @@ def add_user(request):
     # Get statistics for the quick stats card
     total_users = User.objects.count()
     active_users = User.objects.filter(is_active=True).count()
+    
+    # Get recent users for the table
+    recent_users = User.objects.select_related('userprofile').order_by('-date_joined')[:5]
 
     context = {
         'total_users': total_users,
         'active_users': active_users,
+        'recent_users': recent_users,
     }
     return render(request, 'admin/add_user.html', context)
 

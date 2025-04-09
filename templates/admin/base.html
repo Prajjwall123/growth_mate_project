@@ -17,8 +17,8 @@
         <!-- Navigation -->
         <nav class="mt-4">
             <a href="{% url 'admin_dashboard' %}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500 {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-orange-50 text-orange-500{% endif %}">
-                <i class="fas fa-home mr-3"></i>
-                <span>Home</span>
+                <i class="fas fa-tachometer-alt mr-3"></i>
+                <span>Dashboard</span>
             </a>
             <a href="{% url 'admin_users' %}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500 {% if request.resolver_match.url_name == 'admin_users' %}bg-orange-50 text-orange-500{% endif %}">
                 <i class="fas fa-users mr-3"></i>
@@ -29,8 +29,8 @@
                 <span>Courses</span>
             </a>
             <a href="{% url 'profile_settings' %}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500 {% if request.resolver_match.url_name == 'profile_settings' %}bg-orange-50 text-orange-500{% endif %}">
-                <i class="fas fa-cog mr-3"></i>
-                <span>Profile Settings</span>
+                <i class="fas fa-user-cog mr-3"></i>
+                <span>Profile</span>
             </a>
             <button onclick="showLogoutConfirmation()" class="w-full flex items-center px-6 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-500">
                 <i class="fas fa-sign-out-alt mr-3"></i>
@@ -41,27 +41,6 @@
 
     <!-- Main Content -->
     <div class="flex-1 overflow-auto">
-        <!-- Top Bar -->
-        <div class="bg-white shadow-sm">
-            <div class="flex items-center justify-between px-8 py-4">
-                <!-- Search Bar -->
-                <div class="flex-1 max-w-xl">
-                    <div class="relative">
-                        <input type="text" placeholder="Search ..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-orange-500">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                    </div>
-                </div>
-                
-                <!-- Notifications -->
-                <div class="flex items-center space-x-4">
-                    <button class="relative p-2 text-gray-600 hover:text-orange-500">
-                        <i class="fas fa-bell text-xl"></i>
-                        <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <!-- Page Content -->
         <div class="p-8">
             {% block admin_content %}{% endblock %}
@@ -98,8 +77,8 @@
     }
 
     // Close modal when clicking outside
-    document.getElementById('logoutModal').addEventListener('click', function(e) {
-        if (e.target === this) {
+    document.getElementById('logoutModal').addEventListener('click', function(event) {
+        if (event.target === this) {
             hideLogoutConfirmation();
         }
     });
