@@ -3,7 +3,35 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-100">
-    <main class="ml-8 p-8">
+    <!-- Table of Contents Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg overflow-y-auto">
+        <div class="p-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-800">Course Content</h2>
+        </div>
+        <div class="p-4">
+            <div class="space-y-2">
+                {% for course_lesson in course.lessons_list %}
+                <a href="{% url 'view_lesson' course_lesson.id %}" 
+                   class="block px-4 py-2 rounded-lg {% if course_lesson.id == lesson.id %}bg-orange-50 text-orange-700{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm font-medium">{{ forloop.counter }}</span>
+                            <span class="text-sm">{{ course_lesson.title }}</span>
+                        </div>
+                        {% if course_lesson.is_completed %}
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="p-8">
         <!-- Back Button and Course Progress -->
         <div class="flex justify-between items-center mb-8">
             <a href="{% url 'course_details' course.id %}" class="flex items-center text-gray-600 hover:text-gray-900">

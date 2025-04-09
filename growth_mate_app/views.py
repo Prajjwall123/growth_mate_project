@@ -1597,6 +1597,11 @@ def view_lesson(request, lesson_id):
     # Get content blocks in order
     content_blocks = lesson.content_blocks.order_by('order')
     
+    # Add lessons_list to course object and mark completed lessons
+    course.lessons_list = all_lessons
+    for course_lesson in course.lessons_list:
+        course_lesson.is_completed = course_lesson in completed_lessons
+    
     context = {
         'lesson': lesson,
         'course': course,
