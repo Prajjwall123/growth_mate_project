@@ -5,6 +5,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django_cleanup.signals import cleanup_pre_delete
 from sorl.thumbnail import ImageField, delete
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -66,6 +68,21 @@ class UserProfile(models.Model):
         if self.cover_image:
             self.cover_image.delete(save=False)
         super().delete(*args, **kwargs)
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        # If user is a superuser, set role as admin
+        role = 'admin' if instance.is_superuser else 'employee'
+        UserProfile.objects.create(user=instance, role=role)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if not hasattr(instance, 'userprofile'):
+        # If user is a superuser, set role as admin
+        role = 'admin' if instance.is_superuser else 'employee'
+        UserProfile.objects.create(user=instance, role=role)
+    instance.userprofile.save()
 
 class Course(models.Model):
     title = models.CharField(max_length=200)
@@ -314,3 +331,17 @@ class ContentBlock(models.Model):
         if self.file:
             self.file.delete(save=False)
         super().delete(*args, **kwargs)
+
+class Activity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name='activities')
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Activities"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.description[:50]}"

@@ -9,14 +9,14 @@ from django.contrib.auth.models import User
 import random
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock, CourseProgress
+from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock, CourseProgress, Activity
 from .tokens import generate_token  
 from growth_mate_project import settings 
 from django.http import JsonResponse
 from django.core.mail import send_mail
 import random
-from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Avg, Sum
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count, Avg, Sum, Q
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.hashers import make_password
@@ -24,11 +24,11 @@ from django.utils import timezone
 from social_django.utils import load_strategy, load_backend
 from social_core.backends.oauth import BaseOAuth2PKCE
 from social_core.exceptions import MissingBackend
-from django.db.models import Q
 from collections import defaultdict
 import logging
 from openpyxl import Workbook
 from django.http import HttpResponse
+from datetime import timedelta
 
 
 otp_storage = {}
@@ -985,6 +985,7 @@ def manager_courses(request):
         'status_filter': status_filter,
     }
     return render(request, 'manager/courses.html', context)
+
 @login_required
 def course_form(request, course_id=None):
     # Check if user is a manager
@@ -1581,3 +1582,46 @@ def toggle_user_status(request, user_id):
             messages.error(request, "User not found.")
     
     return redirect('users')
+
+def is_admin(user):
+    return user.is_authenticated and (user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role == 'admin'))
+
+@user_passes_test(is_admin, login_url='login')
+def admin_dashboard(request):
+    # Get total users count
+    total_users = UserProfile.objects.count()
+    
+    # Get user growth (new users in last 30 days)
+    thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+    user_growth = UserProfile.objects.filter(user__date_joined__gte=thirty_days_ago).count()
+    
+    # Get total courses count
+    total_courses = Course.objects.count()
+    
+    # Get course growth (new courses in last 30 days)
+    course_growth = Course.objects.filter(created_at__gte=thirty_days_ago).count()
+    
+    # Get active managers count
+    active_managers = UserProfile.objects.filter(role='manager', user__is_active=True).count()
+    
+    # Get course status counts
+    course_status = Course.objects.values('status').annotate(count=Count('id'))
+    
+    # Get recent activities
+    recent_activities = Activity.objects.select_related('user', 'course').order_by('-created_at')[:10]
+    
+    # Get latest users
+    latest_users = UserProfile.objects.select_related('user').order_by('-user__date_joined')[:5]
+    
+    context = {
+        'total_users': total_users,
+        'user_growth': user_growth,
+        'total_courses': total_courses,
+        'course_growth': course_growth,
+        'active_managers': active_managers,
+        'course_status': course_status,
+        'recent_activities': recent_activities,
+        'latest_users': latest_users,
+    }
+    
+    return render(request, 'admin/dashboard.html', context)

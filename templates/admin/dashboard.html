@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Users -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Users</p>
+                    <h3 class="text-2xl font-bold">{{ total_users }}</h3>
+                    <p class="text-sm text-green-500">+{{ user_growth }} new users</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Courses -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Courses</p>
+                    <h3 class="text-2xl font-bold">{{ total_courses }}</h3>
+                    <p class="text-sm text-green-500">+{{ course_growth }} new courses</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Managers -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Active Managers</p>
+                    <h3 class="text-2xl font-bold">{{ active_managers }}</h3>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Status -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Course Status</p>
+                    <h3 class="text-2xl font-bold">
+                        {% for status in course_status %}
+                            {{ status.count }} {{ status.status }}<br>
+                        {% endfor %}
+                    </h3>
+                </div>
+                <div class="bg-yellow-100 p-3 rounded-full">
+                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Latest Users -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-semibold">Recent Activity</h2>
+            </div>
+            <div class="p-6">
+                {% for activity in recent_activities %}
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        {% if activity.user.userprofile.profile_picture %}
+                            <img src="{{ activity.user.userprofile.profile_picture.url }}" alt="{{ activity.user.get_full_name }}" class="w-10 h-10 rounded-full">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-500 text-sm">{{ activity.user.get_full_name|make_list|first }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium">{{ activity.user.get_full_name }}</p>
+                        <p class="text-sm text-gray-500">{{ activity.description }}</p>
+                        <p class="text-xs text-gray-400">{{ activity.created_at|timesince }} ago</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center">No recent activity</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Latest Users -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b">
+                <h2 class="text-xl font-semibold">Latest Users</h2>
+            </div>
+            <div class="p-6">
+                {% for profile in latest_users %}
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.get_full_name }}" class="w-10 h-10 rounded-full">
+                        {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-500 text-sm">{{ profile.user.get_full_name|make_list|first }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium">{{ profile.user.get_full_name }}</p>
+                        <p class="text-sm text-gray-500">{{ profile.role|title }}</p>
+                        <p class="text-xs text-gray-400">Joined {{ profile.user.date_joined|timesince }} ago</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center">No users found</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

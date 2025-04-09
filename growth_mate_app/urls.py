@@ -40,6 +40,9 @@ urlpatterns = [
     path('users/', views.users_view, name='users'),
     path('users/export/', views.export_users, name='export_users'),
     path('users/toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
+
+    # Admin Dashboard Route
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
 ]
 
 if settings.DEBUG:
