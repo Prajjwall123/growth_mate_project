@@ -2,7 +2,20 @@
 {% load static %}
 
 {% block admin_content %}
-<div class="container mx-auto px-4 py-8">
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Courses</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Courses</li>
+    </ol>
+
+    <!-- Create Course Button -->
+    <div class="mb-4">
+        <a href="{% url 'admin_course_form' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Course
+        </a>
+    </div>
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Total Courses -->
@@ -136,6 +149,12 @@
 
     <!-- Courses List -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800">All Courses</h2>
+            <a href="{% url 'admin_course_form' %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Create New Course
+            </a>
+        </div>
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -145,6 +164,7 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollments</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -193,9 +213,16 @@
                             {{ course.is_active|yesno:"Active,Inactive" }}
                         </span>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ course.created_at|date:"M d, Y" }}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{% url 'edit_course' course.id %}" class="text-blue-600 hover:text-blue-900 mr-3">Edit</a>
-                        <a href="{% url 'delete_course' course.id %}" class="text-red-600 hover:text-red-900">Delete</a>
+                        <a href="{% url 'admin_course_form_edit' course.id %}" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="#" class="text-red-600 hover:text-red-900" onclick="confirmDelete('{{ course.id }}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
                     </td>
                 </tr>
                 {% empty %}

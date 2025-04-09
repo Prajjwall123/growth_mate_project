@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Course, UserProfile, Lesson, DashboardStats, StudentProgress, Enrollment, CourseCategory, CourseTag, ContentBlock, CourseProgress, Activity
 from .tokens import generate_token  
 from growth_mate_project import settings 
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.core.mail import send_mail
 import random
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -34,6 +34,9 @@ from django.db import transaction
 
 otp_storage = {}
 logger = logging.getLogger(__name__)
+
+def is_admin(user):
+    return user.is_authenticated and (user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role == 'admin'))
 
 def signup(request):
     if request.method == "POST":
@@ -160,10 +163,12 @@ def verify_otp(request):
                 last_name=user_data['last_name']
             )
 
-            # Create user profile
-            UserProfile.objects.create(
+            # Update or create user profile
+            UserProfile.objects.update_or_create(
                 user=user,
-                role=user_data['role']
+                defaults={
+                    'role': user_data['role']
+                }
             )
 
             # Clear session data
@@ -1005,25 +1010,17 @@ def manager_courses(request):
     }
     return render(request, 'manager/courses.html', context)
 
-@login_required
-def course_form(request, course_id=None):
-    # Check if user is a manager
-    try:
-        user_profile = UserProfile.objects.get(user=request.user)
-        if user_profile.role != 'manager':
-            messages.error(request, 'You do not have permission to access this page.')
-            return redirect('home')
-    except UserProfile.DoesNotExist:
-        messages.error(request, 'User profile not found.')
-        return redirect('home')
-
+def _handle_course_form(request, course_id=None, is_admin=False):
+    """
+    Base function to handle course form submission for both admin and manager roles.
+    """
     course = None
     if course_id:
         try:
             course = Course.objects.get(id=course_id)
         except Course.DoesNotExist:
             messages.error(request, 'Course not found.')
-            return redirect('manager_courses')
+            return redirect('admin_courses' if is_admin else 'manager_courses')
 
     if request.method == 'POST':
         # Handle course data
@@ -1119,7 +1116,7 @@ def course_form(request, course_id=None):
                         )
 
         messages.success(request, f'Course {"updated" if course_id else "created"} successfully.')
-        return redirect('manager_courses')
+        return redirect('admin_courses' if is_admin else 'manager_courses')
 
     # Get categories for the form
     categories = CourseCategory.objects.all()
@@ -1128,6 +1125,35 @@ def course_form(request, course_id=None):
         'course': course,
         'categories': categories,
     }
+    return context
+
+@user_passes_test(is_admin)
+def admin_course_form(request, course_id=None):
+    if request.user.userprofile.role != 'admin':
+        return redirect('home')
+    
+    context = _handle_course_form(request, course_id, is_admin=True)
+    if isinstance(context, HttpResponseRedirect):
+        return context
+    
+    return render(request, 'admin/course_form.html', context)
+
+@login_required
+def course_form(request, course_id=None):
+    # Check if user is a manager
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        if user_profile.role != 'manager':
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('home')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('home')
+
+    context = _handle_course_form(request, course_id, is_admin=False)
+    if isinstance(context, HttpResponseRedirect):
+        return context
+    
     return render(request, 'manager/course_form.html', context)
 
 @login_required
@@ -1601,9 +1627,6 @@ def toggle_user_status(request, user_id):
             messages.error(request, "User not found.")
     
     return redirect('users')
-
-def is_admin(user):
-    return user.is_authenticated and (user.is_superuser or (hasattr(user, 'userprofile') and user.userprofile.role == 'admin'))
 
 @user_passes_test(is_admin, login_url='login')
 def admin_dashboard(request):
