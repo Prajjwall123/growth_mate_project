@@ -1219,14 +1219,19 @@ def enroll_course(request, course_id):
 def manage_lessons(request, course_id):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
-        if user_profile.role != 'manager':
+        if user_profile.role not in ['manager', 'admin']:
             messages.error(request, 'You do not have permission to manage lessons.')
             return redirect('home')
     except UserProfile.DoesNotExist:
         messages.error(request, 'User profile not found.')
         return redirect('home')
 
-    course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    # Get course based on user role
+    if user_profile.role == 'admin':
+        course = get_object_or_404(Course, id=course_id)
+    else:
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
     lessons = course.lessons.all().prefetch_related('content_blocks').order_by('order')
 
     if request.method == 'POST':

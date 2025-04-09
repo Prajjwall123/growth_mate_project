@@ -50,6 +50,7 @@ urlpatterns = [
     path('admin/courses/', views.admin_courses, name='admin_courses'),
     path('admin/courses/add/', views.admin_course_form, name='admin_course_form'),
     path('admin/courses/<int:course_id>/edit/', views.admin_course_form, name='admin_course_form_edit'),
+    path('admin/courses/<int:course_id>/lessons/', views.manage_lessons, name='admin_manage_lessons'),
     path('admin/categories/', views.admin_categories, name='admin_categories'),
     path('admin/reports/', views.admin_reports, name='admin_reports'),
     path('admin/settings/', views.admin_settings, name='admin_settings'),

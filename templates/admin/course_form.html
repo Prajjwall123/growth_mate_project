@@ -153,19 +153,23 @@
                 </div>
 
                 <!-- Course Lessons -->
-                {% if course %}
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
                         <h2 class="text-lg font-semibold text-gray-800">Course Lessons</h2>
-                        <a href="{% url 'manage_lessons' course.id %}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        {% if course %}
+                        <a href="{% url 'admin_manage_lessons' course.id %}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             Manage Lessons
                         </a>
+                        {% else %}
+                        <div class="text-sm text-gray-600">
+                            <p>You can manage lessons after creating the course.</p>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="bg-gray-50 rounded-lg p-4">
                         <p class="text-sm text-gray-600">You can manage lessons in a separate page for better organization.</p>
                     </div>
                 </div>
-                {% endif %}
 
                 <!-- Form Actions -->
                 <div class="flex justify-end space-x-4">
