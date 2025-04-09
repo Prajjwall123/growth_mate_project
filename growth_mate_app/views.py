@@ -339,7 +339,25 @@ def my_courses(request):
     user_profile = get_object_or_404(UserProfile, user=request.user)
     
     if user_profile.role == 'manager':
-        courses = Course.objects.filter(instructor=request.user).order_by('-created_at')
+        # Get courses created by the manager
+        created_courses = Course.objects.filter(instructor=request.user).order_by('-created_at')
+        
+        # Get courses the manager is enrolled in
+        enrolled_courses = Course.objects.filter(
+            enrollments__user=request.user
+        ).exclude(
+            instructor=request.user
+        ).order_by('-created_at')
+        
+        # Combine both lists
+        courses = list(created_courses) + list(enrolled_courses)
+        
+        # Add a flag to distinguish between created and enrolled courses
+        for course in created_courses:
+            course.is_created_by_me = True
+        for course in enrolled_courses:
+            course.is_created_by_me = False
+            
         template = 'manager/my_courses.html'
     else:  # employee
         # Get courses through the enrollments related name
@@ -358,7 +376,7 @@ def my_courses(request):
         course.is_enrolled = True  # Since we're already filtering for enrolled courses
         
         # Calculate actual progress based on completed lessons
-        if user_profile.role == 'employee':
+        if user_profile.role == 'employee' or (user_profile.role == 'manager' and not getattr(course, 'is_created_by_me', False)):
             # Get course progress
             course_progress = CourseProgress.objects.filter(
                 user=request.user,
@@ -394,6 +412,26 @@ def my_courses(request):
                 course.user_completion_rate = completion_rate
             else:
                 course.user_completion_rate = 0
+        else:
+            # For courses created by the manager, calculate average completion rate
+            total_progress = 0
+            total_enrollments = 0
+            
+            for enrollment in course.enrollments.all():
+                progress = CourseProgress.objects.filter(
+                    user=enrollment.user,
+                    course=course
+                ).first()
+                
+                if progress:
+                    total_lessons = course.lessons.count()
+                    if total_lessons > 0:
+                        completed_lessons = progress.completed_lessons.count()
+                        enrollment_progress = (completed_lessons / total_lessons) * 100
+                        total_progress += enrollment_progress
+                        total_enrollments += 1
+            
+            course.user_completion_rate = round(total_progress / total_enrollments, 2) if total_enrollments > 0 else 0
     
     return render(request, template, {
         'courses': courses,
@@ -1186,8 +1224,8 @@ def delete_course(request, course_id):
 @login_required
 def enroll_course(request, course_id):
     user_profile = get_object_or_404(UserProfile, user=request.user)
-    if user_profile.role != 'employee':
-        messages.error(request, 'Only employees can enroll in courses.')
+    if user_profile.role not in ['employee', 'manager']:
+        messages.error(request, 'Only employees and managers can enroll in courses.')
         return redirect('home')
     
     course = get_object_or_404(Course, id=course_id, is_active=True)
@@ -1200,7 +1238,7 @@ def enroll_course(request, course_id):
     # Check if course has reached maximum students
     if course.max_students and course.enrollments.count() >= course.max_students:
         messages.error(request, 'This course has reached its maximum number of students.')
-        return redirect('available_courses')
+        return redirect('available_courses' if user_profile.role == 'employee' else 'manager_available_courses')
     
     try:
         # Create enrollment
@@ -1213,7 +1251,7 @@ def enroll_course(request, course_id):
         return redirect('my_courses')
     except Exception as e:
         messages.error(request, f'Error enrolling in course: {str(e)}')
-        return redirect('available_courses')
+        return redirect('available_courses' if user_profile.role == 'employee' else 'manager_available_courses')
 
 @login_required
 def manage_lessons(request, course_id):
@@ -1370,6 +1408,37 @@ def manage_lessons(request, course_id):
         'lessons': lessons,
     }
     return render(request, 'manager/manage_lessons.html', context)
+
+@login_required
+def delete_lesson(request, course_id, lesson_id):
+    """
+    Delete a specific lesson from a course.
+    """
+    # Check if user is admin or manager
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Access denied. Admin or manager privileges required.')
+        return redirect('home')
+    
+    # Get the course
+    if user_profile.role == 'admin':
+        course = get_object_or_404(Course, id=course_id)
+    else:
+        course = get_object_or_404(Course, id=course_id, instructor=request.user)
+    
+    # Get the lesson
+    lesson = get_object_or_404(Lesson, id=lesson_id, course=course)
+    
+    # Delete the lesson
+    lesson.delete()
+    
+    messages.success(request, 'Lesson deleted successfully!')
+    
+    # Redirect based on user role
+    if user_profile.role == 'admin':
+        return redirect('admin_courses')
+    else:
+        return redirect('manager_courses')
 
 @login_required
 def course_details(request, course_id):
@@ -2079,3 +2148,36 @@ def send_message(request):
             'error': 'An unexpected error occurred',
             'details': str(e)
         }, status=500)
+
+@login_required
+def manager_available_courses(request):
+    user_profile = get_object_or_404(UserProfile, user=request.user)
+    if user_profile.role != 'manager':
+        messages.error(request, 'Access denied. Manager privileges required.')
+        return redirect('home')
+    
+    # Get all active courses that the user is not enrolled in and didn't create
+    enrolled_course_ids = Course.objects.filter(
+        enrollments__user=request.user
+    ).values_list('id', flat=True)
+    
+    created_course_ids = Course.objects.filter(
+        instructor=request.user
+    ).values_list('id', flat=True)
+    
+    # Get admin users
+    admin_users = User.objects.filter(userprofile__role='admin')
+    
+    available_courses = Course.objects.filter(
+        is_active=True,
+        instructor__in=admin_users  # Only show courses created by admins
+    ).exclude(
+        id__in=enrolled_course_ids
+    ).exclude(
+        id__in=created_course_ids
+    ).order_by('-created_at')
+    
+    return render(request, 'manager/available_courses.html', {
+        'courses': available_courses,
+        'user_profile': user_profile
+    })
