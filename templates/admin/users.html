@@ -2,21 +2,15 @@
 {% load static %}
 
 {% block admin_content %}
+<!-- Add Alpine.js library in the head -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 <div class="p-6">
     <div class="mb-6">
         <h1 class="text-2xl font-semibold text-gray-900">Users</h1>
         <p class="mt-1 text-sm text-gray-600">Manage all users in the system</p>
     </div>
 
-    <!-- Action Button -->
-    <div class="flex justify-end mb-6">
-        <a href="{% url 'add_user' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
-            Add New User
-        </a>
-    </div>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -35,8 +29,8 @@
                     </p>
                     {% endif %}
                 </div>
-                <div class="bg-blue-100 p-3 rounded-lg">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                 </div>
@@ -98,29 +92,43 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="mb-6 flex flex-wrap gap-4">
-        <form method="get" class="flex flex-wrap gap-4">
-            <div class="flex-1 min-w-[200px]">
-                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search users..." 
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+    <div class="flex justify-between">
+        <div class="mb-6 flex flex-wrap gap-4">
+            <form method="get" class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search users..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <select name="role" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">All Roles</option>
+                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="manager" {% if request.GET.role == 'manager' %}selected{% endif %}>Manager</option>
+                    <option value="employee" {% if request.GET.role == 'employee' %}selected{% endif %}>Employee</option>
+                </select>
+                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    <option value="">All Status</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                    Apply Filters
+                </button>
+            </form>
+        </div>
+    
+            <!-- Action Button -->
+            <div class="flex justify-end mb-6">
+                <a href="{% url 'add_user' %}" class="bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-orange-700">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Add New User
+                </a>
             </div>
-            <select name="role" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">All Roles</option>
-                <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
-                <option value="manager" {% if request.GET.role == 'manager' %}selected{% endif %}>Manager</option>
-                <option value="employee" {% if request.GET.role == 'employee' %}selected{% endif %}>Employee</option>
-            </select>
-            <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">All Status</option>
-                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
-                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
-            </select>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Apply Filters
-            </button>
-        </form>
+
     </div>
+    <!-- Filters -->
+    
 
     <!-- Users Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -247,10 +255,13 @@
                         {% if not profile.user.is_superuser %}
                         <div class="flex justify-end gap-2">
                             <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                                <button @click="open = !open" type="button" class="text-blue-600 hover:text-blue-900">
+                                <button @click="open = !open" type="button" class="text-white bg-orange-500 p-2 rounded-lg flex items-center gap-1">
                                     Change Role
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
                                 </button>
-                                <div x-show="open" 
+                                <div x-show="open" x-cloak
                                      x-transition:enter="transition ease-out duration-100"
                                      x-transition:enter-start="transform opacity-0 scale-95"
                                      x-transition:enter-end="transform opacity-100 scale-100"
@@ -324,7 +335,7 @@
 
                     {% for i in users.paginator.page_range %}
                         {% if users.number == i %}
-                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-orange-50 text-sm font-medium text-orange-600">
                                 {{ i }}
                             </span>
                         {% elif i > users.number|add:'-3' and i < users.number|add:'3' %}
@@ -412,4 +423,10 @@ window.onclick = function(event) {
     }
 }
 </script>
+
+<style>
+[x-cloak] {
+    display: none !important;
+}
+</style>
 {% endblock %}
