@@ -1343,11 +1343,19 @@ def manage_lessons(request, course_id):
                                         content_block.id, content_type, text, file)
 
             messages.success(request, 'Lessons updated successfully!')
-            return redirect('manager_courses')
+            # Redirect based on user role
+            if user_profile.role == 'admin':
+                return redirect('admin_courses')
+            else:
+                return redirect('manager_courses')
         except Exception as e:
             logger.error("Error in manage_lessons POST: %s", str(e))
             messages.error(request, f'Error updating lessons: {str(e)}')
-            return redirect('manager_courses')
+            # Redirect based on user role
+            if user_profile.role == 'admin':
+                return redirect('admin_courses')
+            else:
+                return redirect('manager_courses')
 
     # Log lessons data before rendering
     logger.debug("Rendering lessons for course %s", course_id)
