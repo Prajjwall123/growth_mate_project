@@ -1859,12 +1859,101 @@ def add_user(request):
 
 @user_passes_test(is_admin)
 def admin_courses(request):
-    courses = Course.objects.select_related('manager').all()
-    return render(request, 'admin/courses.html', {'courses': courses})
+    if request.user.userprofile.role != 'admin':
+        return redirect('home')
+    
+    # Get all courses
+    courses = Course.objects.all()
+    
+    # Apply filters
+    search_query = request.GET.get('search', '')
+    category_id = request.GET.get('category', '')
+    status = request.GET.get('status', '')
+    sort_by = request.GET.get('sort', '')
+    sort_order = request.GET.get('order', 'asc')
+    
+    if search_query:
+        courses = courses.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(instructor__first_name__icontains=search_query) |
+            Q(instructor__last_name__icontains=search_query)
+        )
+    
+    if category_id:
+        courses = courses.filter(category_id=category_id)
+    
+    if status == 'active':
+        courses = courses.filter(is_active=True)
+    elif status == 'inactive':
+        courses = courses.filter(is_active=False)
+    
+    # Apply sorting
+    if sort_by:
+        if sort_by == 'title':
+            courses = courses.order_by(f"{'-' if sort_order == 'desc' else ''}title")
+        elif sort_by == 'instructor':
+            courses = courses.order_by(f"{'-' if sort_order == 'desc' else ''}instructor__first_name")
+        elif sort_by == 'category':
+            courses = courses.order_by(f"{'-' if sort_order == 'desc' else ''}category__name")
+        elif sort_by == 'enrollments':
+            courses = courses.annotate(
+                enrolled_count=Count('enrollments')
+            ).order_by(f"{'-' if sort_order == 'desc' else ''}enrolled_count")
+        elif sort_by == 'completion':
+            courses = courses.annotate(
+                completion_rate=Avg('enrollments__progress')
+            ).order_by(f"{'-' if sort_order == 'desc' else ''}completion_rate")
+        elif sort_by == 'status':
+            courses = courses.order_by(f"{'-' if sort_order == 'desc' else ''}is_active")
+    else:
+        # Default sorting by creation date
+        courses = courses.order_by('-created_at')
+    
+    # Calculate statistics
+    total_courses = Course.objects.count()
+    active_courses = Course.objects.filter(is_active=True).count()
+    active_percentage = (active_courses / total_courses * 100) if total_courses > 0 else 0
+    
+    # Calculate course growth
+    last_month = timezone.now() - timezone.timedelta(days=30)
+    new_courses = Course.objects.filter(created_at__gte=last_month).count()
+    course_growth = (new_courses / total_courses * 100) if total_courses > 0 else 0
+    
+    # Calculate enrollment statistics
+    total_enrollments = Enrollment.objects.count()
+    completed_enrollments = Enrollment.objects.filter(progress=100).count()
+    completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+    
+    # Calculate enrollment growth
+    new_enrollments = Enrollment.objects.filter(enrolled_at__gte=last_month).count()
+    enrollment_growth = (new_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
+    
+    # Pagination
+    paginator = Paginator(courses, 10)
+    page = request.GET.get('page')
+    courses = paginator.get_page(page)
+    
+    context = {
+        'courses': courses,
+        'categories': CourseCategory.objects.all(),
+        'total_courses': total_courses,
+        'active_courses': active_courses,
+        'active_percentage': round(active_percentage, 1),
+        'course_growth': round(course_growth, 1),
+        'total_enrollments': total_enrollments,
+        'enrollment_growth': round(enrollment_growth, 1),
+        'completion_rate': round(completion_rate, 1),
+        'completed_courses': completed_enrollments,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
+    }
+    
+    return render(request, 'admin/courses.html', context)
 
 @user_passes_test(is_admin)
 def admin_categories(request):
-    categories = Category.objects.all()
+    categories = CourseCategory.objects.all()
     return render(request, 'admin/categories.html', {'categories': categories})
 
 @user_passes_test(is_admin)
