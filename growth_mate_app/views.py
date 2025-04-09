@@ -626,6 +626,8 @@ def users_view(request):
     # Get search query and filters
     search_query = request.GET.get('search', '')
     status_filter = request.GET.get('status', 'all')
+    sort_by = request.GET.get('sort', 'name')  # Default sort by name
+    sort_order = request.GET.get('order', 'asc')  # Default ascending order
     page = request.GET.get('page', 1)
 
     # Base queryset for employees
@@ -644,6 +646,16 @@ def users_view(request):
         employees = employees.filter(is_active=True)
     elif status_filter == 'inactive':
         employees = employees.filter(is_active=False)
+
+    # Apply sorting
+    sort_field = {
+        'name': 'first_name',
+        'date': 'date_joined'
+    }.get(sort_by, 'first_name')
+
+    if sort_order == 'desc':
+        sort_field = f'-{sort_field}'
+    employees = employees.order_by(sort_field)
 
     # Get manager's courses
     manager_courses = Course.objects.filter(instructor=request.user)
@@ -746,6 +758,8 @@ def users_view(request):
         },
         'search_query': search_query,
         'status_filter': status_filter,
+        'sort_by': sort_by,
+        'sort_order': sort_order,
         'page_obj': employees,
         'user_activities': user_activities[:10],  # Show last 10 activities
         'course_distribution': course_distribution

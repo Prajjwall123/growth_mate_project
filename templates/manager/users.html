@@ -70,42 +70,24 @@
 
         <!-- Search and Filter -->
         <div class="bg-white rounded-lg shadow p-6 mb-8">
-            <form method="GET" class="flex flex-wrap gap-4">
-                <div class="flex-1">
-                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search users..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="w-48">
-                    <select name="status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
-                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-                    </select>
-                </div>
-                <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Search
-                </button>
-            </form>
-        </div>
-
-        <!-- User List Section -->
-        <div class="bg-white rounded-lg shadow mb-8">
-            <div class="flex justify-between items-center p-6 border-b">
-                <h2 class="text-lg font-semibold">User List</h2>
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-600">Sort by</span>
-                        <select class="border rounded-lg px-3 py-1 text-sm">
-                            <option>Name</option>
-                            <option>Date</option>
-                            <option>Status</option>
+            <form method="GET" id="filterForm" class="space-y-4">
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex-1">
+                        <input type="text" name="search" value="{{ search_query }}" placeholder="Search users..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="w-48">
+                        <select name="status" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
                         </select>
                     </div>
-                    <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                        <span>Filter by Status</span>
+                    <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        Search
                     </button>
+                </div>
+
+                <div class="flex items-center justify-end">
                     <a href="{% url 'export_users' %}" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm flex items-center space-x-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -113,6 +95,13 @@
                         <span>Export</span>
                     </a>
                 </div>
+            </form>
+        </div>
+
+        <!-- User List Section -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-lg font-semibold">User List</h2>
             </div>
 
             <!-- Table -->
@@ -259,6 +248,18 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Handle form submission on dropdown changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filterForm');
+        const dropdowns = filterForm.querySelectorAll('select');
+        
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        });
+    });
+
     // Course Distribution Chart
     const ctx = document.getElementById('courseDistributionChart').getContext('2d');
     const courseData = {{ course_distribution|safe }};
