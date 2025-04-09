@@ -502,7 +502,7 @@ def edit_course(request, course_id):
         messages.error(request, 'Access denied. Managers only.')
         return redirect('home')
     
-    course = get_object_or_404(Course, id=course_id, uploaded_by=request.user)
+    course = get_object_or_404(Course, id=course_id, instructor=request.user)
     
     if request.method == 'POST':
         try:

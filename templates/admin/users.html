@@ -136,7 +136,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <a href="?{{ request.GET|urlencode }}&sort=name" class="flex items-center gap-1">
+                        <a href="?{{ request.GET|urlencode }}&sort=name&order={% if sort_by == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1">
                             Name
                             {% if sort_by == 'name' %}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +150,7 @@
                         </a>
                     </th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <a href="?{{ request.GET|urlencode }}&sort=email" class="flex items-center gap-1">
+                        <a href="?{{ request.GET|urlencode }}&sort=email&order={% if sort_by == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1">
                             Email
                             {% if sort_by == 'email' %}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +164,7 @@
                         </a>
                     </th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <a href="?{{ request.GET|urlencode }}&sort=role" class="flex items-center gap-1">
+                        <a href="?{{ request.GET|urlencode }}&sort=role&order={% if sort_by == 'role' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1">
                             Role
                             {% if sort_by == 'role' %}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@
                         </a>
                     </th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <a href="?{{ request.GET|urlencode }}&sort=status" class="flex items-center gap-1">
+                        <a href="?{{ request.GET|urlencode }}&sort=status&order={% if sort_by == 'status' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1">
                             Status
                             {% if sort_by == 'status' %}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,8 +192,8 @@
                         </a>
                     </th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <a href="?{{ request.GET|urlencode }}&sort=joined" class="flex items-center gap-1">
-                            Joined
+                        <a href="?{{ request.GET|urlencode }}&sort=joined&order={% if sort_by == 'joined' and sort_order == 'asc' %}desc{% else %}asc{% endif %}" class="flex items-center gap-1">
+                            Date Created
                             {% if sort_by == 'joined' %}
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     {% if sort_order == 'asc' %}
