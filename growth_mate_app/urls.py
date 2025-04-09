@@ -53,6 +53,10 @@ urlpatterns = [
     path('admin/categories/', views.admin_categories, name='admin_categories'),
     path('admin/reports/', views.admin_reports, name='admin_reports'),
     path('admin/settings/', views.admin_settings, name='admin_settings'),
+
+    #chatbot route
+    path('chat/', views.chat_view, name='chat'),
+    path('send-message/', views.send_message, name='send_message'),
 ]
 
 if settings.DEBUG:

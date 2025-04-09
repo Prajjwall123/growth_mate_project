@@ -30,7 +30,9 @@ from openpyxl import Workbook
 from django.http import HttpResponse
 from datetime import timedelta
 from django.db import transaction
-
+import random
+from .gemini_service import get_bot_response
+from .models import ChatMessage
 
 otp_storage = {}
 logger = logging.getLogger(__name__)
@@ -154,7 +156,7 @@ def verify_otp(request):
         if stored_otp == entered_otp:
             user_data = request.session.get('temp_user_data')
 
-            # Create user
+             # Create user
             user = User.objects.create_user(
                 username=email,
                 email=email,
@@ -173,7 +175,6 @@ def verify_otp(request):
 
             # Clear session data
             request.session.pop('temp_user_data', None)
-            request.session.pop('otp', None)
 
             messages.success(request, "Your account has been activated! You can now log in.")
             return redirect("login")
@@ -1988,3 +1989,80 @@ def admin_reports(request):
 def admin_settings(request):
     # Add settings management logic here
     return render(request, 'admin/settings.html')
+
+def chat_view(request):
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    messages = ChatMessage.objects.filter(user=request.user).order_by('timestamp')
+    return render(request, 'chat.html', {'messages': messages})
+
+def send_message(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'User not authenticated'}, status=401)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        message = request.POST.get('message')
+        print(f"Received message: {message}")  # Debug log
+        
+        if not message:
+            return JsonResponse({'error': 'Message field is missing'}, status=400)
+        
+        message = message.strip()
+        if not message:
+            return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+        
+        # Save user message
+        user_message = ChatMessage.objects.create(
+            user=request.user,
+            message=message,
+            is_bot=False
+        )
+        
+        # Get chat history
+        chat_history = ChatMessage.objects.filter(user=request.user).order_by('-timestamp')[:5]
+        
+        # Get bot response
+        try:
+            bot_response = get_bot_response(message, chat_history)
+            if not bot_response:
+                raise ValueError("Empty response from bot")
+                
+        except Exception as e:
+            print(f"Error getting bot response: {str(e)}")  # Log the error
+            return JsonResponse({
+                'error': 'Failed to get response from chat service',
+                'details': str(e),
+                'user_message': {
+                    'message': user_message.message,
+                    'timestamp': user_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            }, status=500)
+        
+        # Save bot response
+        bot_message = ChatMessage.objects.create(
+            user=request.user,
+            message=bot_response,
+            is_bot=True
+        )
+        
+        return JsonResponse({
+            'user_message': {
+                'message': user_message.message,
+                'timestamp': user_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            },
+            'bot_message': {
+                'message': bot_message.message,
+                'timestamp': bot_message.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in send_message view: {str(e)}")  # Log the error
+        return JsonResponse({
+            'error': 'An unexpected error occurred',
+            'details': str(e)
+        }, status=500)
