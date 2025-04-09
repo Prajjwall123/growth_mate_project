@@ -89,7 +89,21 @@ def login_view(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        user = authenticate(request, username=email, password=password)
+        # Debug print
+        print(f"Attempting login with email: {email}")
+
+        # Try to get the user by email first
+        try:
+            user = User.objects.get(email=email)
+            print(f"Found user: {user.username}, is_superuser: {user.is_superuser}")
+        except User.DoesNotExist:
+            print(f"No user found with email: {email}")
+            messages.error(request, "Invalid login credentials, please try again.")
+            return redirect("login")
+
+        # Authenticate with username (email) and password
+        user = authenticate(request, username=user.username, password=password)
+        print(f"Authentication result: {'Success' if user else 'Failed'}")
 
         if user is None:
             messages.error(request, "Invalid login credentials, please try again.")
@@ -101,14 +115,20 @@ def login_view(request):
         # Check user role and redirect accordingly
         try:
             user_profile = UserProfile.objects.get(user=user)
-            if user_profile.role == 'manager':
+            print(f"User profile found with role: {user_profile.role}")
+            if user_profile.role == 'admin' or user.is_superuser:
+                return redirect('admin_dashboard')
+            elif user_profile.role == 'manager':
                 return redirect('manager_dashboard')
             elif user_profile.role == 'employee':
                 return redirect('employee_dashboard')
             else:
                 return redirect('home')
         except UserProfile.DoesNotExist:
-            return redirect('home')
+            print("No user profile found")
+            # Create a user profile if it doesn't exist
+            UserProfile.objects.create(user=user, role='admin' if user.is_superuser else 'employee')
+            return redirect('admin_dashboard' if user.is_superuser else 'home')
 
     return render(request, "login.html")
 
@@ -1605,7 +1625,13 @@ def admin_dashboard(request):
     active_managers = UserProfile.objects.filter(role='manager', user__is_active=True).count()
     
     # Get course status counts
-    course_status = Course.objects.values('status').annotate(count=Count('id'))
+    active_courses = Course.objects.filter(is_active=True).count()
+    featured_courses = Course.objects.filter(is_featured=True).count()
+    
+    # Calculate course completion rate
+    total_enrollments = Enrollment.objects.count()
+    completed_enrollments = Enrollment.objects.filter(completed=True).count()
+    course_completion_rate = (completed_enrollments / total_enrollments * 100) if total_enrollments > 0 else 0
     
     # Get recent activities
     recent_activities = Activity.objects.select_related('user', 'course').order_by('-created_at')[:10]
@@ -1619,9 +1645,36 @@ def admin_dashboard(request):
         'total_courses': total_courses,
         'course_growth': course_growth,
         'active_managers': active_managers,
-        'course_status': course_status,
+        'active_courses': active_courses,
+        'featured_courses': featured_courses,
+        'course_completion_rate': course_completion_rate,
         'recent_activities': recent_activities,
         'latest_users': latest_users,
     }
     
     return render(request, 'admin/dashboard.html', context)
+
+@user_passes_test(is_admin)
+def admin_users(request):
+    users = UserProfile.objects.select_related('user').all()
+    return render(request, 'admin/users.html', {'users': users})
+
+@user_passes_test(is_admin)
+def admin_courses(request):
+    courses = Course.objects.select_related('manager').all()
+    return render(request, 'admin/courses.html', {'courses': courses})
+
+@user_passes_test(is_admin)
+def admin_categories(request):
+    categories = Category.objects.all()
+    return render(request, 'admin/categories.html', {'categories': categories})
+
+@user_passes_test(is_admin)
+def admin_reports(request):
+    # Add report generation logic here
+    return render(request, 'admin/reports.html')
+
+@user_passes_test(is_admin)
+def admin_settings(request):
+    # Add settings management logic here
+    return render(request, 'admin/settings.html')

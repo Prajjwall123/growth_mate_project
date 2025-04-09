@@ -41,8 +41,13 @@ urlpatterns = [
     path('users/export/', views.export_users, name='export_users'),
     path('users/toggle-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
 
-    # Admin Dashboard Route
+    # Admin Dashboard Routes - IMPORTANT: These must come before the catch-all pattern
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/users/', views.admin_users, name='admin_users'),
+    path('admin/courses/', views.admin_courses, name='admin_courses'),
+    path('admin/categories/', views.admin_categories, name='admin_categories'),
+    path('admin/reports/', views.admin_reports, name='admin_reports'),
+    path('admin/settings/', views.admin_settings, name='admin_settings'),
 ]
 
 if settings.DEBUG:

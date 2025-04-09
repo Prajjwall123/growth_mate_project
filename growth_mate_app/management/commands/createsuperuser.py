@@ -67,22 +67,23 @@ class Command(BaseCommand):
             password = secrets.token_urlsafe(10)
             self.stdout.write(self.style.WARNING(f'Generated password: {password}'))
 
-        # Create the superuser
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                first_name=first_name or '',
-                last_name=last_name or '',
-                is_staff=True,
-                is_superuser=True
-            )
-
-            # Update or create UserProfile with admin role
-            UserProfile.objects.update_or_create(
-                user=user,
-                defaults={'role': 'admin'}
-            )
-
-        self.stdout.write(self.style.SUCCESS(f'Superuser "{username}" was created successfully with admin role.'))
+        try:
+            with transaction.atomic():
+                # Create the superuser
+                user = User.objects.create_superuser(
+                    username=username,
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                
+                # Update or create UserProfile with admin role
+                UserProfile.objects.update_or_create(
+                    user=user,
+                    defaults={'role': 'admin'}
+                )
+                
+                self.stdout.write(self.style.SUCCESS(f'Superuser "{username}" was created successfully with admin role.'))
+        except Exception as e:
+            raise CommandError(str(e))

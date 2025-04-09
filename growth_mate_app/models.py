@@ -46,7 +46,37 @@ class UserProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name} - {self.role}"
+        return f"{self.user.get_full_name()} - {self.get_role_display()}"
+
+    def get_initials(self):
+        """Return the user's initials based on their first and last name."""
+        first_name = self.user.first_name or ""
+        last_name = self.user.last_name or ""
+        
+        if first_name and last_name:
+            return f"{first_name[0]}{last_name[0]}".upper()
+        elif first_name:
+            return first_name[0].upper()
+        elif last_name:
+            return last_name[0].upper()
+        else:
+            # If no name is available, use the first letter of the email
+            return self.user.email[0].upper() if self.user.email else "U"
+
+    def get_full_name(self):
+        """Return the user's full name."""
+        first_name = self.user.first_name or ""
+        last_name = self.user.last_name or ""
+        
+        if first_name and last_name:
+            return f"{first_name} {last_name}"
+        elif first_name:
+            return first_name
+        elif last_name:
+            return last_name
+        else:
+            # If no name is available, use the email
+            return self.user.email.split('@')[0] if self.user.email else "Unknown User"
 
     def save(self, *args, **kwargs):
         # Delete old profile picture if it exists and is being updated

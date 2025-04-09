@@ -20,7 +20,9 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Include the app URLs first to ensure custom admin routes are matched before Django admin
     path('', include('growth_mate_app.urls')),
     path('social-auth/', include('social_django.urls', namespace='social')),
+    # Django admin site URLs should come after custom admin routes
+    path('admin/', admin.site.urls),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
