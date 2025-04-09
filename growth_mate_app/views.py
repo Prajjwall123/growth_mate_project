@@ -522,7 +522,7 @@ def edit_course(request, course_id):
             messages.error(request, f'Error updating course: {str(e)}')
             return redirect('manager_courses')
     
-    return render(request, 'edit_course.html', {
+    return render(request, 'manager/course_form.html', {
         'course': course,
         'user_profile': user_profile
     })
