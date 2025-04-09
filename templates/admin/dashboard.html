@@ -4,178 +4,209 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block admin_content %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <!-- Total Users Card -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                        <dd class="flex items-baseline">
-                            <div class="text-2xl font-semibold text-gray-900">{{ total_users }}</div>
-                        </dd>
-                    </dl>
-                </div>
+<!-- Welcome Section -->
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-gray-800">Welcome Back, Admin!</h1>
+    <p class="text-gray-600">See what happened with your courses and students</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Users -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-gray-500 mb-2">Total Users</h3>
+                <p class="text-2xl font-semibold">324</p>
+                <p class="text-green-500 text-sm mt-2">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    +9% from last month
+                </p>
+            </div>
+            <div class="bg-orange-100 p-3 rounded-lg">
+                <i class="fas fa-users text-orange-500 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Total Courses Card -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Total Courses</dt>
-                        <dd class="flex items-baseline">
-                            <div class="text-2xl font-semibold text-gray-900">{{ total_courses }}</div>
-                        </dd>
-                    </dl>
-                </div>
+    <!-- Active Users -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-gray-500 mb-2">Active Users</h3>
+                <p class="text-2xl font-semibold">65</p>
+                <p class="text-green-500 text-sm mt-2">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    +12% from last month
+                </p>
+            </div>
+            <div class="bg-green-100 p-3 rounded-lg">
+                <i class="fas fa-user-check text-green-500 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Active Managers Card -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Active Managers</dt>
-                        <dd class="flex items-baseline">
-                            <div class="text-2xl font-semibold text-gray-900">{{ active_managers }}</div>
-                        </dd>
-                    </dl>
-                </div>
+    <!-- Course Completion -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-gray-500 mb-2">Course Completion</h3>
+                <p class="text-2xl font-semibold">78%</p>
+                <p class="text-green-500 text-sm mt-2">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    +5% from last month
+                </p>
+            </div>
+            <div class="bg-blue-100 p-3 rounded-lg">
+                <i class="fas fa-graduation-cap text-blue-500 text-xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Course Completion Rate Card -->
-    <div class="bg-white overflow-hidden shadow rounded-lg">
-        <div class="p-5">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                    <dl>
-                        <dt class="text-sm font-medium text-gray-500 truncate">Course Completion Rate</dt>
-                        <dd class="flex items-baseline">
-                            <div class="text-2xl font-semibold text-gray-900">{{ course_completion_rate|floatformat:1 }}%</div>
-                        </dd>
-                    </dl>
-                </div>
+    <!-- Student Engagement -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-gray-500 mb-2">Student Engagement</h3>
+                <p class="text-2xl font-semibold">87%</p>
+                <p class="text-green-500 text-sm mt-2">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    +7% from last month
+                </p>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded-lg">
+                <i class="fas fa-chart-line text-yellow-500 text-xl"></i>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Recent Activity and Latest Users -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <!-- Recent Activity -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Activity</h3>
-        </div>
-        <div class="border-t border-gray-200">
-            <ul class="divide-y divide-gray-200">
-                {% for activity in recent_activities %}
-                <li class="px-4 py-4 sm:px-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-shrink-0">
-                            {% if activity.user.profile_picture %}
-                            <img class="h-8 w-8 rounded-full" src="{{ activity.user.profile_picture.url }}" alt="">
-                            {% else %}
-                            <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span class="text-gray-500 text-sm">{{ activity.user.get_initials }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">
-                                {{ activity.user.get_full_name }}
-                            </p>
-                            <p class="text-sm text-gray-500">
-                                {{ activity.description }}
-                            </p>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <p class="text-sm text-gray-500">
-                                {{ activity.created_at|timesince }} ago
-                            </p>
-                        </div>
-                    </div>
-                </li>
-                {% empty %}
-                <li class="px-4 py-4 sm:px-6">
-                    <p class="text-sm text-gray-500">No recent activity</p>
-                </li>
-                {% endfor %}
-            </ul>
+<!-- Popular Courses & Recent Activities -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Popular Courses -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="text-lg font-semibold mb-4">Popular Courses</h3>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">Web Development</span>
+                </div>
+                <span class="text-gray-500">245 students</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">Data Science</span>
+                </div>
+                <span class="text-gray-500">198 students</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">Mobile Development</span>
+                </div>
+                <span class="text-gray-500">167 students</span>
+            </div>
         </div>
     </div>
 
-    <!-- Latest Users -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:px-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Latest Users</h3>
-        </div>
-        <div class="border-t border-gray-200">
-            <ul class="divide-y divide-gray-200">
-                {% for user in latest_users %}
-                <li class="px-4 py-4 sm:px-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex-shrink-0">
-                            {% if user.profile_picture %}
-                            <img class="h-8 w-8 rounded-full" src="{{ user.profile_picture.url }}" alt="">
-                            {% else %}
-                            <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                                <span class="text-gray-500 text-sm">{{ user.get_initials }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">
-                                {{ user.get_full_name }}
-                            </p>
-                            <p class="text-sm text-gray-500">
-                                {{ user.email }}
-                            </p>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                {{ user.get_role_display }}
-                            </span>
-                        </div>
-                    </div>
-                </li>
-                {% empty %}
-                <li class="px-4 py-4 sm:px-6">
-                    <p class="text-sm text-gray-500">No users found</p>
-                </li>
-                {% endfor %}
-            </ul>
+    <!-- Recent Activities -->
+    <div class="bg-white rounded-lg p-6 shadow-sm">
+        <h3 class="text-lg font-semibold mb-4">Recent Activities</h3>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">New Course Added</span>
+                </div>
+                <span class="text-gray-500">5 mins ago</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">Student Enrollment</span>
+                </div>
+                <span class="text-gray-500">2 hours ago</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="text-gray-600">Course Completed</span>
+                </div>
+                <span class="text-gray-500">1 day ago</span>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- System Status -->
+<div class="bg-white rounded-lg p-6 shadow-sm">
+    <h3 class="text-lg font-semibold mb-4">System Status</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="flex justify-between items-center">
+            <span class="text-gray-600">Server Uptime</span>
+            <span class="text-green-500">99.9%</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span class="text-gray-600">Response Time</span>
+            <span class="text-green-500">0.2s</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span class="text-gray-600">Storage Used</span>
+            <span class="text-yellow-500">75%</span>
+        </div>
+    </div>
+</div>
+
+<!-- Learner Progress Report -->
+<div class="mt-8 bg-white rounded-lg p-6 shadow-sm">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold">Learner Progress Report</h3>
+        <select class="border rounded-lg px-4 py-2 text-gray-600">
+            <option>Top performers</option>
+        </select>
+    </div>
+    <div class="space-y-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-700">Michael Chen</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: 85%"></div>
+                </div>
+                <span class="text-gray-600">85%</span>
+            </div>
+        </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-700">Emily Wilson</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
+                </div>
+                <span class="text-gray-600">65%</span>
+            </div>
+        </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-700">Sarah Johnson</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-48 bg-gray-200 rounded-full h-2 mr-4">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: 95%"></div>
+                </div>
+                <span class="text-gray-600">95%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Courses -->
+<div class="mt-8 bg-white rounded-lg p-6 shadow-sm">
+    <div class="flex justify-between items-center">
+        <div>
+            <h3 class="text-lg font-semibold">Active Courses</h3>
+            <p class="text-4xl font-bold mt-2">92</p>
+        </div>
+        <span class="text-green-500">+8 new</span>
+    </div>
+</div>
+
 {% endblock %} 

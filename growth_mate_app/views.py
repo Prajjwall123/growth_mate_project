@@ -29,6 +29,7 @@ import logging
 from openpyxl import Workbook
 from django.http import HttpResponse
 from datetime import timedelta
+from django.db import transaction
 
 
 otp_storage = {}
@@ -1658,6 +1659,49 @@ def admin_dashboard(request):
 def admin_users(request):
     users = UserProfile.objects.select_related('user').all()
     return render(request, 'admin/users.html', {'users': users})
+
+@user_passes_test(is_admin)
+def add_user(request):
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # Create User instance
+                user = User.objects.create_user(
+                    username=request.POST['email'],  # Using email as username
+                    email=request.POST['email'],
+                    password=request.POST.get('password', User.objects.make_random_password()),  # Generate random password if not provided
+                    first_name=request.POST['first_name'],
+                    last_name=request.POST['last_name'],
+                )
+                
+                # Update or create UserProfile
+                UserProfile.objects.update_or_create(
+                    user=user,
+                    defaults={
+                        'role': request.POST['role'],
+                        'phone': request.POST.get('phone', ''),
+                    }
+                )
+
+                if 'photo' in request.FILES:
+                    user.userprofile.profile_picture = request.FILES['photo']
+                    user.userprofile.save()
+
+                messages.success(request, 'User created successfully!')
+                return redirect('admin_users')
+        except Exception as e:
+            messages.error(request, f'Error creating user: {str(e)}')
+            return redirect('add_user')
+
+    # Get statistics for the quick stats card
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+
+    context = {
+        'total_users': total_users,
+        'active_users': active_users,
+    }
+    return render(request, 'admin/add_user.html', context)
 
 @user_passes_test(is_admin)
 def admin_courses(request):

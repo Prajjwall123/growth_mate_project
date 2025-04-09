@@ -44,6 +44,7 @@ urlpatterns = [
     # Admin Dashboard Routes - IMPORTANT: These must come before the catch-all pattern
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin/users/', views.admin_users, name='admin_users'),
+    path('admin/users/add/', views.add_user, name='add_user'),
     path('admin/courses/', views.admin_courses, name='admin_courses'),
     path('admin/categories/', views.admin_categories, name='admin_categories'),
     path('admin/reports/', views.admin_reports, name='admin_reports'),
