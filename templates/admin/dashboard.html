@@ -120,9 +120,10 @@
             <div class="flex items-center space-x-4">
                 <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                     {% if user_profile.profile_picture %}
-                        <img src="{{ user_profile.profile_picture.url }}" alt="{{ user_profile.user.get_full_name }}" class="w-10 h-10 rounded-full object-cover">
+                    <img src="{{ user_profile.profile_picture.url }}" alt="{{ user_profile.user.get_full_name }}"
+                        class="w-10 h-10 rounded-full object-cover">
                     {% else %}
-                        <span class="text-gray-600">{{ user_profile.user.get_initials }}</span>
+                    <span class="text-gray-600">{{ user_profile.user.get_initials }}</span>
                     {% endif %}
                 </div>
                 <div>
@@ -131,7 +132,8 @@
                 </div>
             </div>
             <div class="flex items-center">
-                <span class="px-3 py-1 text-xs rounded-full {% if user_profile.user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                <span
+                    class="px-3 py-1 text-xs rounded-full {% if user_profile.user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                     {{ user_profile.user.is_active|yesno:"Active,Inactive" }}
                 </span>
             </div>
@@ -140,4 +142,9 @@
     </div>
 </div>
 
-{% endblock %} 
+{% if user.is_authenticated %}
+{% include 'includes/chat_modal.html' %}
+<script src="{% static 'js/chat.js' %}"></script>
+{% endif %}
+
+{% endblock %}

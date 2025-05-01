@@ -50,10 +50,12 @@
     {% block content %}
     {% endblock %}
     <!-- Include Chat Modal -->
+    {% if user.is_authenticated %}
     {% include 'includes/chat_modal.html' %}
+    <script src="{% static 'js/chat.js' %}"></script>
+    {% endif %}
 
     <!-- Scripts -->
-    <script src="{% static 'js/chat.js' %}"></script>
     <script>
         // Auto-hide messages after 5 seconds, targeting only message divs
         document.addEventListener('DOMContentLoaded', function () {

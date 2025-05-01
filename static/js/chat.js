@@ -83,6 +83,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         })
             .then(response => {
+                if (response.status === 401) {
+                    // Redirect to login or show a message
+                    window.location.href = '/login/';
+                    throw new Error('You must be logged in to use the chat. Redirecting to login...');
+                }
                 if (!response.ok) {
                     if (response.status === 400) {
                         return response.json().then(data => {

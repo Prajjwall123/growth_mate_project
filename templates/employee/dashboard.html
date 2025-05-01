@@ -15,7 +15,8 @@
             </div>
             <div class="flex space-x-4">
                 {% if next_lesson %}
-                <a href="{% url 'view_lesson' lesson_id=next_lesson.id %}" class="flex items-center bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200">
+                <a href="{% url 'view_lesson' lesson_id=next_lesson.id %}"
+                    class="flex items-center bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path>
                     </svg>
@@ -30,7 +31,9 @@
                 </button>
                 <button class="flex items-center bg-blue-100 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-200">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                        </path>
                     </svg>
                     Pending Tasks: {{ pending_tasks }} assignments
                 </button>
@@ -48,7 +51,8 @@
                     </div>
                     <p class="text-2xl font-bold text-gray-900 mt-2">{{ overall_progress }}%</p>
                 </div>
-                <p class="text-sm text-blue-600 mt-2">{% if overall_progress > 50 %}Above average{% else %}Keep going!{% endif %}</p>
+                <p class="text-sm text-blue-600 mt-2">{% if overall_progress > 50 %}Above average{% else %}Keep going!{%
+                    endif %}</p>
             </div>
 
             <!-- Total Courses -->
@@ -80,7 +84,9 @@
                 {% if recent_completions >= 5 %}
                 <div class="flex items-center space-x-4">
                     <svg class="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+                        </path>
                     </svg>
                     <div>
                         <p class="text-sm font-medium text-gray-700">Quick Learner</p>
@@ -91,7 +97,9 @@
                 {% if overall_progress == 100 %}
                 <div class="flex items-center space-x-4">
                     <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                        <path
+                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+                        </path>
                     </svg>
                     <div>
                         <p class="text-sm font-medium text-gray-700">Perfect Score</p>
@@ -128,4 +136,9 @@
         </div>
     </main>
 </div>
+
+{% if user.is_authenticated %}
+{% include 'includes/chat_modal.html' %}
+<script src="{% static 'js/chat.js' %}"></script>
+{% endif %}
 {% endblock %}
