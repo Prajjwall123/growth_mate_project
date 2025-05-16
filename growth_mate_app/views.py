@@ -33,6 +33,7 @@ from django.db import transaction
 import random
 from .gemini_service import get_bot_response
 from .models import ChatMessage
+from django.contrib.auth.tokens import default_token_generator
 
 otp_storage = {}
 logger = logging.getLogger(__name__)
@@ -2257,3 +2258,68 @@ def contact_us(request):
             messages.error(request, f"Failed to send message. Please try again later. Error: {str(e)}")
         return redirect('contact_us')
     return render(request, 'contact_us.html')
+
+def forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, 'No user found with that email address.')
+            return redirect('forgot_password')
+        # Generate OTP
+        otp = ''.join(random.choices(string.digits, k=6))
+        request.session['reset_email'] = email
+        request.session['reset_otp'] = otp
+        request.session.set_expiry(300)  # 5 minutes expiry
+        # Send OTP email
+        send_mail(
+            'Password Reset OTP',
+            f'Your OTP for password reset is: {otp}',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        messages.success(request, 'An OTP has been sent to your email address.')
+        return redirect('verify_reset_otp')
+    return render(request, 'forgot_password.html')
+
+def verify_reset_otp(request):
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        stored_otp = request.session.get('reset_otp')
+        if not stored_otp:
+            messages.error(request, 'Session expired. Please try again.')
+            return redirect('forgot_password')
+        if entered_otp == stored_otp:
+            request.session['otp_verified'] = True
+            return redirect('reset_password')
+        else:
+            messages.error(request, 'Invalid OTP. Please try again.')
+            return redirect('verify_reset_otp')
+    return render(request, 'verify_reset_otp.html')
+
+def reset_password(request):
+    if not request.session.get('otp_verified'):
+        messages.error(request, 'OTP verification required.')
+        return redirect('forgot_password')
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return redirect('reset_password')
+        email = request.session.get('reset_email')
+        try:
+            user = User.objects.get(email=email)
+            user.set_password(password)
+            user.save()
+            # Clean up session
+            for key in ['reset_email', 'reset_otp', 'otp_verified']:
+                request.session.pop(key, None)
+            messages.success(request, 'Your password has been reset. You can now log in.')
+            return redirect('login')
+        except User.DoesNotExist:
+            messages.error(request, 'User not found.')
+            return redirect('forgot_password')
+    return render(request, 'reset_password.html')

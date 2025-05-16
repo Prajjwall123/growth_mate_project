@@ -64,6 +64,10 @@ urlpatterns = [
     #chatbot route
     path('chat/', views.chat_view, name='chat'),
     path('send-message/', views.send_message, name='send_message'),
+
+    path('forgot-password/', views.forgot_password, name='forgot_password'),
+    path('verify-reset-otp/', views.verify_reset_otp, name='verify_reset_otp'),
+    path('reset-password/', views.reset_password, name='reset_password'),
 ]
 
 if settings.DEBUG:
