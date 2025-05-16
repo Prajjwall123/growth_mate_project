@@ -139,8 +139,18 @@ def login_view(request):
     return render(request, "login.html")
 
 def logout_view(request):
+    user_profile = None
+    is_admin = False
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            is_admin = user_profile.role == 'admin' or request.user.is_superuser
+        except UserProfile.DoesNotExist:
+            is_admin = request.user.is_superuser
     logout(request)
     messages.success(request, "You have been logged out successfully.")
+    if is_admin or (user_profile and user_profile.role == 'manager'):
+        return redirect("home")
     return redirect("login")
 
 def verify_otp(request):
