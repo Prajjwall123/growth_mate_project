@@ -58,6 +58,9 @@ urlpatterns = [
     path('admin/reports/', views.admin_reports, name='admin_reports'),
     path('admin/settings/', views.admin_settings, name='admin_settings'),
 
+    path('contact/', views.contact_us, name='contact_us'),
+
+
     #chatbot route
     path('chat/', views.chat_view, name='chat'),
     path('send-message/', views.send_message, name='send_message'),

@@ -73,16 +73,37 @@
                     <option value="employee">Retail Employee</option>
                 </select>
             </div>
-            <div>
+            <div class="relative">
                 <label for="password1" class="block text-xs font-medium text-gray-700">Password</label>
-                <input type="password" name="password1" placeholder="Password" required
-                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400">
+                <input type="password" name="password1" id="password1" placeholder="Password" required
+                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 pr-10">
+                <button type="button" onclick="togglePassword('password1', this)" tabindex="-1" class="absolute right-2 top-8 text-gray-400 focus:outline-none">
+                    <i class="far fa-eye"></i>
+                </button>
             </div>
-            <div>
+            <div class="relative">
                 <label for="password2" class="block text-xs font-medium text-gray-700">Confirm Password</label>
-                <input type="password" name="password2" placeholder="Confirm password" required
-                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400">
+                <input type="password" name="password2" id="password2" placeholder="Confirm password" required
+                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 pr-10">
+                <button type="button" onclick="togglePassword('password2', this)" tabindex="-1" class="absolute right-2 top-8 text-gray-400 focus:outline-none">
+                    <i class="far fa-eye"></i>
+                </button>
             </div>
+            <script>
+                function togglePassword(id, btn) {
+                    const input = document.getElementById(id);
+                    const icon = btn.querySelector('i');
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                }
+            </script>
             <button type="submit"
                 class="w-full px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 transition-colors">Sign
                 up</button>
@@ -180,11 +201,39 @@
                     <option value="employee">Retail Employee</option>
                 </select>
             </div>
-            <div>
-                <label for="password" class="block text-xs font-medium text-gray-700">Password</label>
-                <input type="password" name="password" placeholder="Password" required
-                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400">
+            <div class="relative">
+                <label for="password1" class="block text-xs font-medium text-gray-700">Password</label>
+                <input type="password" name="password1" id="password1" placeholder="Password" required
+                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 pr-10">
+                <button type="button" onclick="togglePassword('password1', this)" tabindex="-1"
+                    class="absolute right-2 top-8 text-gray-400 focus:outline-none">
+                    <i class="far fa-eye"></i>
+                </button>
             </div>
+            <div class="relative">
+                <label for="password2" class="block text-xs font-medium text-gray-700">Confirm Password</label>
+                <input type="password" name="password2" id="password2" placeholder="Confirm password" required
+                    class="w-full px-3 py-1.5 mt-1 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 pr-10">
+                <button type="button" onclick="togglePassword('password2', this)" tabindex="-1"
+                    class="absolute right-2 top-8 text-gray-400 focus:outline-none">
+                    <i class="far fa-eye"></i>
+                </button>
+            </div>
+            <script>
+                function togglePassword(id, btn) {
+                    const input = document.getElementById(id);
+                    const icon = btn.querySelector('i');
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                }
+            </script>
             <button type="submit"
                 class="w-full px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 transition-colors">Sign
                 up</button>

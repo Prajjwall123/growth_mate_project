@@ -2218,3 +2218,32 @@ def manager_available_courses(request):
         'courses': available_courses,
         'user_profile': user_profile
     })
+
+def contact_us(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        company = request.POST.get('company')
+        message = request.POST.get('message')
+        subject = f"Contact Us Message from {name}"
+        full_message = f"""
+        Name: {name}
+        Email: {email}
+        Phone: {phone}
+        Company: {company}
+        Message: {message}
+        """
+        try:
+            send_mail(
+                subject,
+                full_message,
+                settings.DEFAULT_FROM_EMAIL,
+                ['growth.mate01@gmail.com'],
+                fail_silently=False,
+            )
+            messages.success(request, "Your message has been sent successfully!")
+        except Exception as e:
+            messages.error(request, f"Failed to send message. Please try again later. Error: {str(e)}")
+        return redirect('contact_us')
+    return render(request, 'contact_us.html')
