@@ -53,9 +53,9 @@
                 </div>
                 <p class="text-sm text-blue-600 mt-2">
                     {% if overall_progress > 50 %}
-                        Above average
+                    Above average
                     {% else %}
-                        Keep going!
+                    Keep going!
                     {% endif %}
                 </p>
             </div>
@@ -141,9 +141,4 @@
         </div>
     </main>
 </div>
-
-{% if user.is_authenticated %}
-{% include 'includes/chat_modal.html' %}
-<script src="{% static 'js/chat.js' %}"></script>
-{% endif %}
 {% endblock %}
