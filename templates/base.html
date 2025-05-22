@@ -80,7 +80,7 @@
             <a href="{% url 'login' %}"
                 class="px-4 py-2 text-white bg-orange-500 rounded-md hover:bg-orange-600 font-medium">Login</a>
             {% endif %}
-            {% if not user_profile.role == 'admin' and not user.is_superuser %}
+            {% if not user.is_authenticated %}
             <a href="{% url 'contact_us' %}"
                 class="px-4 py-2 text-white bg-gray-700 rounded-md hover:bg-gray-900 font-medium flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
