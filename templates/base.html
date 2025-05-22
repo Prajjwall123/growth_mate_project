@@ -106,21 +106,6 @@
 
     {% block content %}
     {% endblock %}
-    <!-- Include Chat Modal -->
-    {% if user.is_authenticated %}
-    {% include 'includes/chat_modal.html' %}
-    <script src="{% static 'js/chat.js' %}" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize chat functionality
-            const chatToggleBtn = document.getElementById('chat-toggle-btn');
-            const chatModal = document.getElementById('chat-modal');
-            if (chatToggleBtn && chatModal) {
-                chatToggleBtn.style.display = 'block';
-            }
-        });
-    </script>
-    {% endif %}
 
     <!-- Scripts -->
     <script>
